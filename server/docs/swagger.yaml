@@ -1,0 +1,29 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: API for the responding to the Client Side section of the Client Server
+    Architecture
+  title: Lattice API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Testing the first route
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: First Route
+      tags:
+      - Health
+swagger: "2.0"
