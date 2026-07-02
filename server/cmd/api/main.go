@@ -15,7 +15,7 @@ import (
 // @Description Testing the first route
 // @Router 		/health [get]
 // @Success 	200 {object} map[string]string
-// @Failure 	500 {object} map[string]stringe
+// @Failure 	500 {object} map[string]string
 // @Tags		Health
 func HealthCheck(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
@@ -34,6 +34,6 @@ func main() {
 	database.MigrateModels()
 	r := gin.Default()
 	r.GET("/health", HealthCheck)
-	r.GET("swagger/*any", ginSwagger.WrapHandler(swaggoFiles.Handler))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggoFiles.Handler))
 	r.Run(":8080")
 }

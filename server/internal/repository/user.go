@@ -28,7 +28,7 @@ func (r *UserRepoHandler) CreateUser(ctx context.Context, user *domain.User) err
 	err := database.DB.WithContext(ctx).Model(&domain.User{}).Create(&user).Error
 	if err != nil {
 		slog.Error("Failed to create a new user", "error", err)
-		return err
+		return errors.New("Internal Server Error")
 	}
 	return nil
 }
@@ -45,7 +45,7 @@ func (r *UserRepoHandler) GetUserByEmail(ctx context.Context, email string) (*do
 			return nil, errors.New("Internal server err")
 		}
 	}
-	return &user, err
+	return &user, nil
 }
 
 func (r *UserRepoHandler) GetUserByID(ctx context.Context, user_id uuid.UUID) (*domain.User, error) {

@@ -7,13 +7,17 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/main"
   
-  # CHANGED: Tells air exactly where to find your main.go entry point
-  cmd = "go build -o ./tmp/main ./cmd/api/main.go"
+  # CHANGED: Added .exe for Windows execution
+  bin = "./tmp/main.exe"
+  
+  # CHANGED: Tells air exactly where to find your main.go and output as .exe
+  cmd = "go build -o ./tmp/main.exe ./cmd/api/main.go"
   
   delay = 1000
-  entrypoint = ["./tmp/main"]
+  
+  # CHANGED: Added .exe to the entrypoint
+  entrypoint = ["./tmp/main.exe"]
   
   # Excludes folders that don't need to trigger a rebuild
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs"]
@@ -25,7 +29,7 @@ tmp_dir = "tmp"
   full_bin = ""
   ignore_dangerous_root_dir = false
   
-  # CHANGED: Tells air to specifically watch your source code directories
+  # Tells air to specifically watch your source code directories
   include_dir = ["cmd", "internal", "pkg"]
   
   include_ext = ["go", "tpl", "tmpl", "html", "env"]

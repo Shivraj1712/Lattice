@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"log/slog"
 
 	"golang.org/x/crypto/bcrypt"
@@ -17,7 +18,7 @@ func (r *PasswordHandler) GenerateHash(givenPassword string) (string, error) {
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(givenPassword), 10)
 	if err != nil {
 		slog.Error("Failed to generated hashed version of password", "error", err)
-		return "", err
+		return "", errors.New("Internal Server Error")
 	}
 	return string(hashPassword), nil
 }

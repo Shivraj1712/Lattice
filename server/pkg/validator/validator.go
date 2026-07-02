@@ -23,6 +23,10 @@ type UpdateAvatar struct {
 	File multipart.FileHeader `json:"file"`
 }
 
+type EmailStruct struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
 func Validate(request any) error {
 	return Validator.Struct(request)
 }

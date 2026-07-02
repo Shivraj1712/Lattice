@@ -37,7 +37,7 @@ func FetchConfig() {
 		RedisUrl:           os.Getenv("REDIS_URL"),
 		GoogleClientId:     os.Getenv("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		GoogleCallbackUrl:  os.Getenv("GOOLGE_CALLBACK_URL"),
+		GoogleCallbackUrl:  os.Getenv("GOOGLE_CALLBACK_URL"),
 		CloudinaryUrl:      os.Getenv("CLOUDINARY_URL"),
 	}
 }
