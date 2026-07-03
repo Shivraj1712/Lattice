@@ -1,9 +1,8 @@
 package middleware
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"github.com/Shivraj1712/Lattice.git/pkg/response"
+	"github.com/gofiber/fiber/v2"
 )
 
 type AppError struct {
@@ -11,16 +10,12 @@ type AppError struct {
 	message string
 }
 
-func ErrorHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
-		if len(c.Errors) > 0 {
-			ginError := c.Errors.Last()
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": ginError.Error(),
-				"success": false,
-			})
-			return
-		}
+func ErrorHandler(ctx *fiber.Ctx, err error) error {
+	code := fiber.StatusInternalServerError
+	message := "Internal Server Error"
+	if newErr, ok := err.(*fiber.Error); ok {
+		code = newErr.Code
+		message = newErr.Message
 	}
+	return response.FailureResponse(ctx, message, code)
 }

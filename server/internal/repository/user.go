@@ -136,8 +136,12 @@ func (r *UserRepoHandler) UpdateUserDetails(ctx context.Context, name string, pa
 			return errors.New("Internal Server Error")
 		}
 	}
-	user.UserName = name
-	user.HashPassword = &password
+	if name != "" {
+		user.UserName = name
+	}
+	if password != "" {
+		user.HashPassword = &password
+	}
 	err = database.DB.WithContext(ctx).Model(&domain.User{}).Save(&user).Error
 	if err != nil {
 		slog.Error("Failed to update the user profile", "error", err)

@@ -53,12 +53,104 @@ paths:
       summary: Begin google authentication
       tags:
       - Authentication
-  /api/v1/auth/google/callback:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: This function is used for the user to login with email and password
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Login
+      tags:
+      - Authentication
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: This function is used logging out the user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Logout User
+      tags:
+      - Authentication
+  /api/v1/auth/profile:
+    delete:
+      consumes:
+      - application/json
+      description: This function is used for the allowing user to delete his account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete User
+      tags:
+      - User
     get:
       consumes:
       - application/json
-      description: This function is used to call when a user wants to complete process
-        of authentication using Google auth
+      description: This function is used for the getting the profile details of the
+        authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get current user profile
+      tags:
+      - User
+  /api/v1/auth/profile/pic:
+    put:
+      consumes:
+      - application/json
+      description: this function is used to allow authorized user to udpate his profile
+        pic
       produces:
       - application/json
       responses:
@@ -74,12 +166,17 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Begin google authentication
+      summary: Update Profile Image
       tags:
-      - Authentication
-  /health:
-    get:
-      description: Testing the first route
+      - User
+  /api/v1/auth/profile/update:
+    put:
+      consumes:
+      - application/json
+      description: This functions allows the user to update the password and user
+        name
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -93,7 +190,55 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: First Route
+      summary: Update User Details
       tags:
-      - Health
+      - User
+  /api/v1/auth/publicProfile:
+    post:
+      consumes:
+      - application/json
+      description: This function is used for the getting the profile details about
+        another user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a user profile
+      tags:
+      - User
+  /api/v1/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: This function is used for the user to sign up using name, email
+        and password
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Signup
+      tags:
+      - Authentication
 swagger: "2.0"

@@ -1,7 +1,7 @@
 package response
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type APIResponse struct {
@@ -10,16 +10,16 @@ type APIResponse struct {
 	Data    any    `json:"data"`
 }
 
-func SuccessResponse(ctx *gin.Context, message string, data any, statusCode int) {
-	ctx.JSON(statusCode, &APIResponse{
+func SuccessResponse(ctx *fiber.Ctx, message string, data any, statusCode int) error {
+	return ctx.Status(statusCode).JSON(&APIResponse{
 		Message: message,
 		Success: true,
 		Data:    data,
 	})
 }
 
-func FailureResponse(ctx *gin.Context, message string, statusCode int) {
-	ctx.JSON(statusCode, &APIResponse{
+func FailureResponse(ctx *fiber.Ctx, message string, statusCode int) error {
+	return ctx.Status(statusCode).JSON(&APIResponse{
 		Message: message,
 		Success: false,
 		Data:    nil,

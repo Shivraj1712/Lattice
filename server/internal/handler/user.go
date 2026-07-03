@@ -3,7 +3,7 @@ package handler
 import (
 	"errors"
 	"log/slog"
-	"net/http"
+	"time"
 
 	"github.com/Shivraj1712/Lattice.git/internal/config"
 	"github.com/Shivraj1712/Lattice.git/internal/domain"
@@ -12,183 +12,167 @@ import (
 	"github.com/Shivraj1712/Lattice.git/internal/utils"
 	"github.com/Shivraj1712/Lattice.git/pkg/response"
 	"github.com/Shivraj1712/Lattice.git/pkg/validator"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/google"
+	"github.com/shareed2k/goth_fiber"
 	"gorm.io/gorm"
 )
 
 type UserInterface interface {
-	BeginOauth() gin.HandlerFunc
-	CompleteOauth() gin.HandlerFunc
-	Login() gin.HandlerFunc
-	SignUp() gin.HandlerFunc
-	Logout() gin.HandlerFunc
-	GetUserProfile() gin.HandlerFunc
-	GetPublicProfile() gin.HandlerFunc
-	UpdateUserImage() gin.HandlerFunc
-	UpdateUserDetails() gin.HandlerFunc
+	BeginOauth(ctx *fiber.Ctx) error
+	CompleteOauth(ctx *fiber.Ctx) error
+	Login(ctx *fiber.Ctx) error
+	SignUp(ctx *fiber.Ctx) error
+	Logout(ctx *fiber.Ctx) error
+	GetUserProfile(ctx *fiber.Ctx) error
+	GetPublicProfile(ctx *fiber.Ctx) error
+	UpdateUserImage(ctx *fiber.Ctx) error
+	UpdateUserDetails(ctx *fiber.Ctx) error
+	DeleteUser(ctx *fiber.Ctx) error
 }
 
 type UserHandler struct {
-	service service.UserServiceInterface
-	repo    repository.UserRepository
-	token   utils.TokenInterface
+	Service service.UserServiceInterface
+	Repo    repository.UserRepository
+	Token   utils.TokenInterface
 }
 
-// @Summary			Google Oauth function initialization
-// @Description		This function call initialises the feature for google based authentication using Goth
-// @Tags			Authentication
-// @Accpet			json
-// @Produce			json
-// @Router			/ [get]
-// @Success			200 {object} map[string]string
-// @Failure			500 {object} map[string]string
-func OauthInit(c *gin.Context) {
-	goth.UseProviders(
-		google.New(
-			config.Configuration.GoogleClientId,
-			config.Configuration.GoogleClientSecret,
-			config.Configuration.GoogleCallbackUrl,
-			"email",
-			"profile",
-		),
+func OauthInit() {
+	googleProvider := google.New(
+		config.Configuration.GoogleClientId,
+		config.Configuration.GoogleClientSecret,
+		config.Configuration.GoogleCallbackUrl,
+		"email",
+		"profile",
 	)
+	goth.UseProviders(googleProvider)
 }
 
-// @Summary			Begin google authentication
-// @Description 	This function is used to call when a user wants to start the authentication using Google auth
-// @Tags			Authentication
-// @Accept 			json
-// @Produce			json
-// @Router			/api/v1/auth/google [get]
-// @Success			200 {object} map[string]string
-// @Failure 		500 {object} map[string]string
-func (r *UserHandler) BeginOauth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		gothic.BeginAuthHandler(c.Writer, c.Request)
+func (r *UserHandler) BeginOauth(ctx *fiber.Ctx) error {
+	return goth_fiber.BeginAuthHandler(ctx)
+}
+
+func (r *UserHandler) CompleteOauth(ctx *fiber.Ctx) error {
+	userDetails, err := goth_fiber.CompleteUserAuth(ctx)
+	if err != nil {
+		slog.Error("Google Authentication failed", "error", err)
+		return response.FailureResponse(ctx, "Google Authentication Failed", fiber.StatusInternalServerError)
 	}
-}
 
-// @Summary			Begin google authentication
-// @Description 	This function is used to call when a user wants to complete process of authentication using Google auth
-// @Tags			Authentication
-// @Accept 			json
-// @Produce			json
-// @Router			/api/v1/auth/google/callback [get]
-// @Success			200 {object} map[string]string
-// @Failure 		500 {object} map[string]string
-func (r *UserHandler) CompleteOauth() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		userDetails, err := gothic.CompleteUserAuth(ctx.Writer, ctx.Request)
-		if err != nil {
-			slog.Error("Google Oauth Completion Failed", "error", err)
-			response.FailureResponse(ctx, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		user, err := r.repo.GetUserByEmail(ctx.Request.Context(), userDetails.Email)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				user.Email = userDetails.Email
-				user.UserName = userDetails.Name
-				user.AuthProvider = "google"
-				user.AuthProviderID = &userDetails.UserID
-				user.AvatarUrl = userDetails.AvatarURL
-				er := r.repo.CreateUser(ctx.Request.Context(), user)
-				if er != nil {
-					slog.Error("Failed to create a new user", "error", er)
-					response.FailureResponse(ctx, "Internal Server Error", http.StatusInternalServerError)
-					return
-				}
-			} else {
-				response.FailureResponse(ctx, "Internal Server Error", http.StatusInternalServerError)
+	user, err := r.Repo.GetUserByEmail(ctx.UserContext(), userDetails.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			user = &domain.User{
+				Email:          userDetails.Email,
+				UserName:       userDetails.Name,
+				AuthProvider:   "google",
+				AuthProviderID: &userDetails.UserID,
+				AvatarUrl:      userDetails.AvatarURL,
 			}
+			er := r.Repo.CreateUser(ctx.UserContext(), user)
+			if er != nil {
+				slog.Error("Failed to create a new user during Google Oauth", "error", er)
+				return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
+			}
+		} else {
+			return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
 		}
-		sessionToken, err := r.token.GenerateToken(ctx.Request.Context(), user.ID)
-		if err != nil {
-			response.FailureResponse(ctx, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		ctx.SetCookie("token", sessionToken, 72*60*60, "/", "", false, true)
-		response.SuccessResponse(ctx, "Google Login Successful!", nil, http.StatusOK)
 	}
+	sessionToken, err := r.Token.GenerateToken(ctx.UserContext(), user.ID)
+	if err != nil {
+		return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
+	}
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    sessionToken,
+		Expires:  time.Now().Add(72 * time.Hour),
+		Path:     "/",
+		Domain:   "",
+		Secure:   false,
+		HTTPOnly: true,
+		SameSite: "Lax",
+	})
+	return response.SuccessResponse(ctx, "Google Login Successful!", nil, fiber.StatusOK)
 }
 
 // @Summary			User Login
 // @Description 	This function is used for the user to login with email and password
-// @Tags 			Auth
+// @Tags 			Authentication
 // @Accept			json
 // @Produce 		json
 // @Router			/api/v1/auth/login [post]
 // @Success			200 {object} map[string]string
 // @Failure 		401 {object} map[string]string
-func (r *UserHandler) Login() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var request validator.LoginStruct
-		if err := ctx.ShouldBindJSON(&request); err != nil {
-			slog.Warn("Invalid request", "error", errors.New("Invalid request"))
-			response.FailureResponse(ctx, "Invalid Request", http.StatusBadRequest)
-			return
-		}
-		if err := validator.Validate(request); err != nil {
-			slog.Warn("Invalid request", "error", errors.New("Invalid request"))
-			response.FailureResponse(ctx, "Invalid Request", http.StatusBadRequest)
-			return
-		}
-		sessionToken, err := r.service.LocalLogin(ctx.Request.Context(), request.Email, request.Password)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				response.FailureResponse(ctx, "User with this Email Do not exists", http.StatusBadRequest)
-				return
-			} else if err.Error() == "Internal Server Error" {
-				response.FailureResponse(ctx, "Internal Server Error", http.StatusInternalServerError)
-				return
-			} else {
-				response.FailureResponse(ctx, "Invalid Credentials", http.StatusBadRequest)
-				return
-			}
-		}
-		ctx.SetCookie("token", sessionToken, 72*60*60, "/", "", false, true)
-		response.SuccessResponse(ctx, "User Login Successful", nil, http.StatusOK)
+func (r *UserHandler) Login(ctx *fiber.Ctx) error {
+	var request validator.LoginStruct
+	if err := ctx.BodyParser(&request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
 	}
+	if err := validator.Validate(request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+	}
+	sessionToken, err := r.Service.LocalLogin(ctx.UserContext(), request.Email, request.Password)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response.FailureResponse(ctx, "User with this Email Do not exists", fiber.StatusBadRequest)
+		} else if err.Error() == "Internal Server Error" {
+			return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
+		} else {
+			return response.FailureResponse(ctx, "Invalid Credentials", fiber.StatusBadRequest)
+		}
+	}
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    sessionToken,
+		Expires:  time.Now().Add(72 * time.Hour),
+		Path:     "/",
+		Domain:   "",
+		Secure:   false,
+		HTTPOnly: true,
+	})
+	return response.SuccessResponse(ctx, "User Login Successful", nil, fiber.StatusOK)
 }
 
 // @Summary			User Signup
 // @Description 	This function is used for the user to sign up using name, email and password
-// @Tags 			Auth
+// @Tags 			Authentication
 // @Accept			json
 // @Produce 		json
 // @Router			/api/v1/auth/signup [post]
 // @Success			201 {object} map[string]string
 // @Failure 		401 {object} map[string]string
-func (r *UserHandler) SignUp() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var request validator.SignUpStruct
-		if err := ctx.ShouldBindJSON(&request); err != nil {
-			slog.Warn("Invalid request", "error", errors.New("Invalid request"))
-			response.FailureResponse(ctx, "Invalid Request", http.StatusBadRequest)
-			return
-		}
-		if err := validator.Validate(request); err != nil {
-			slog.Warn("Invalid request", "error", errors.New("Invalid request"))
-			response.FailureResponse(ctx, "Invalid Request", http.StatusBadRequest)
-			return
-		}
-		sessionToken, err := r.service.LocalSignUp(ctx.Request.Context(), request.Name, request.Email, request.Password)
-		if err != nil {
-			if err.Error() == "User Already Exists with this email" {
-				response.FailureResponse(ctx, "User Already Exists", http.StatusBadRequest)
-				return
-			} else {
-				response.FailureResponse(ctx, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-		}
-		ctx.SetCookie("token", sessionToken, 72*60*60, "/", "", false, true)
-		response.SuccessResponse(ctx, "Sign Up Successful", nil, http.StatusCreated)
+func (r *UserHandler) SignUp(ctx *fiber.Ctx) error {
+	var request validator.SignUpStruct
+	if err := ctx.BodyParser(&request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
 	}
+	if err := validator.Validate(request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+	}
+	sessionToken, err := r.Service.LocalSignUp(ctx.UserContext(), request.Name, request.Email, request.Password)
+	if err != nil {
+		if err.Error() == "User Already Exists with this email" {
+			return response.FailureResponse(ctx, "User Already Exists", fiber.StatusBadRequest)
+		} else {
+			return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
+		}
+	}
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    sessionToken,
+		Expires:  time.Now().Add(72 * time.Hour),
+		Path:     "/",
+		Domain:   "",
+		Secure:   false,
+		HTTPOnly: true,
+	})
+	return response.SuccessResponse(ctx, "Sign Up Successful", nil, fiber.StatusCreated)
 }
 
 // @Summary			Get current user profile
@@ -199,74 +183,192 @@ func (r *UserHandler) SignUp() gin.HandlerFunc {
 // @Router			/api/v1/auth/profile [get]
 // @Success			200 {object} map[string]string
 // @Failure 		401 {object} map[string]string
-func (r *UserHandler) GetUserProfile() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var user *domain.User
-		value, err := ctx.Get("user_id")
-		if err || value == nil {
-			slog.Warn("User ID not found in the server", "error", errors.New("Unauthorized"))
-			response.FailureResponse(ctx, "Unauthorize", http.StatusUnauthorized)
-			return
-		}
-		user_id := value.(uuid.UUID)
-		user, er := r.service.GetUserProfile(ctx.Request.Context(), user_id)
-		if er != nil {
-			if er.Error() == "Internal Server Error" {
-				response.FailureResponse(ctx, "Internal Server", http.StatusInternalServerError)
-				return
-			} else {
-				response.FailureResponse(ctx, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-		}
-		response.SuccessResponse(ctx, "", user, http.StatusOK)
+func (r *UserHandler) GetUserProfile(ctx *fiber.Ctx) error {
+	var user *domain.User
+	value := ctx.Locals("user_id")
+	if value == nil {
+		slog.Warn("User ID not found in the server", "error", errors.New("Unauthorized"))
+		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
 	}
+	user_id := value.(uuid.UUID)
+	user, er := r.Service.GetUserProfile(ctx.UserContext(), user_id)
+	if er != nil {
+		if er.Error() == "Internal Server Error" {
+			return response.FailureResponse(ctx, "Internal Server", fiber.StatusInternalServerError)
+		} else {
+			return response.FailureResponse(ctx, "Unauthorized", fiber.StatusUnauthorized)
+		}
+	}
+	return response.SuccessResponse(ctx, "", user, fiber.StatusOK)
 }
 
-func (r *UserHandler) Logout() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		value, err := ctx.Cookie("token")
-		if err != nil {
-			slog.Error("No Token found", "error", errors.New("Unauthorized as no token found"))
-			return
-		}
-		err = r.service.Logout(ctx.Request.Context(), value)
-		if err != nil {
-			response.FailureResponse(ctx, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		ctx.SetCookie("token", "", -1, "/", "", false, true)
-		response.SuccessResponse(ctx, "User logout successful", nil, http.StatusOK)
+// @Summary			Logout User
+// @Description 	This function is used logging out the user
+// @Tags 			Authentication
+// @Accept			json
+// @Produce 		json
+// @Router			/api/v1/auth/logout [post]
+// @Success			200 {object} map[string]string
+// @Failure 		401 {object} map[string]string
+func (r *UserHandler) Logout(ctx *fiber.Ctx) error {
+	value := ctx.Cookies("token")
+	if value == "" {
+		slog.Error("No Token found", "error", errors.New("Unauthorized as no token found"))
+		return response.FailureResponse(ctx, "Unauthorised", fiber.StatusUnauthorized)
 	}
+	err := r.Service.Logout(ctx.UserContext(), value)
+	if err != nil {
+		return response.FailureResponse(ctx, err.Error(), fiber.StatusInternalServerError)
+	}
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-24 * time.Hour),
+		Path:     "/",
+		Domain:   "",
+		Secure:   false,
+		HTTPOnly: true,
+	})
+	return response.SuccessResponse(ctx, "User logout successful", nil, fiber.StatusOK)
 }
 
-// func (r *UserHandler) GetPublicProfile() gin.HandlerFunc {
-// 	return func(ctx *gin.Context) {
-// 		var request validator.EmailStruct
-// 		if err := ctx.ShouldBindJSON(&request); err != nil {
-// 			slog.Warn("Invalid request", "error", errors.New("Invalid request"))
-// 			response.FailureResponse(ctx, "Invalid Request", http.StatusBadRequest)
-// 			return
-// 		}
-// 		if err := validator.Validate(request); err != nil {
-// 			slog.Warn("Invalid request", "error", errors.New("Invalid request"))
-// 			response.FailureResponse(ctx, "Invalid Request", http.StatusBadRequest)
-// 			return
-// 		}
-// 		user, err := r.repo.GetUserByEmail(ctx.Request.Context(), request.Email)
-// 		if err != nil {
-// 			if err.Error() == "Internal Server Error" {
-// 				response.FailureResponse(ctx, "Internal Server", http.StatusInternalServerError)
-// 				return
-// 			} else {
-// 				response.FailureResponse(ctx, "No Such User found", http.StatusNotFound)
-// 			}
-// 		}
-// 		var data any = map[string] string {
-// 			"name" : user.UserName,
-// 			"email" : user.Email,
-// 			"avatar" : user.AvatarUrl,
-// 			""
-// 		}
-// 	}
-// }
+// @Summary 			Update Profile Image
+// @Description 		this function is used to allow authorized user to udpate his profile pic
+// @Accept 				json
+// @Produce				json
+// @Tags				User
+// @Router				/api/v1/auth/profile/pic [put]
+// @Success				200 {object} map[string]string
+// @Failure 			500 {object} map[string]string
+func (r *UserHandler) UpdateUserImage(ctx *fiber.Ctx) error {
+	request, err := ctx.FormFile("image")
+	if err != nil {
+		slog.Warn("Invalid Request", "error", errors.New("Invalid Request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+	}
+	value := ctx.Locals("user_id")
+	if value == nil {
+		slog.Warn("User ID not found in the server", "error", errors.New("Unauthorized"))
+		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
+	}
+	user_id := value.(uuid.UUID)
+	newERR := r.Service.UpdateAvatar(ctx.UserContext(), user_id, request)
+	if newERR != nil {
+		if errors.Is(newERR, gorm.ErrRecordNotFound) {
+			return response.FailureResponse(ctx, "Unauthorized", fiber.StatusUnauthorized)
+		} else {
+			return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
+		}
+	}
+	return response.SuccessResponse(ctx, "User Avatar Updated", nil, fiber.StatusOK)
+}
+
+// @Summary 		Update User Details
+// @Description		This functions allows the user to update the password and user name
+// @Tags 			User
+// @Accept			json
+// @Produce 		json
+// @Router			/api/v1/auth/profile/update	[put]
+// @Success 		200 {object} map[string]string
+// @Failure			500 {object} map[string]string
+func (r *UserHandler) UpdateUserDetails(ctx *fiber.Ctx) error {
+	var request validator.UpdateDetailStruct
+	if err := ctx.BodyParser(&request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+	}
+	if err := validator.Validate(request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+	}
+	value := ctx.Locals("user_id")
+	if value == nil {
+		slog.Warn("User ID not found in the server", "error", errors.New("Unauthorized"))
+		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
+	}
+	user_id := value.(uuid.UUID)
+	var password string
+	if request.Password != nil {
+		password = *request.Password
+	} else {
+		password = ""
+	}
+	err := r.Service.UpdateDetails(ctx.UserContext(), request.Name, password, user_id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+		} else {
+			return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
+		}
+	}
+	return response.SuccessResponse(ctx, "Profile Updated Successfully", nil, fiber.StatusOK)
+}
+
+// @Summary			Get a user profile
+// @Description 	This function is used for the getting the profile details about another user
+// @Tags 			User
+// @Accept			json
+// @Produce 		json
+// @Router			/api/v1/auth/publicProfile [post]
+// @Success			200 {object} map[string]string
+// @Failure 		404 {object} map[string]string
+func (r *UserHandler) GetPublicProfile(ctx *fiber.Ctx) error {
+	var request validator.EmailStruct
+	if err := ctx.BodyParser(&request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+	}
+	if err := validator.Validate(request); err != nil {
+		slog.Warn("Invalid request", "error", errors.New("Invalid request"))
+		return response.FailureResponse(ctx, "Invalid Request", fiber.StatusBadRequest)
+	}
+	user, err := r.Service.GetPublicProfile(ctx.UserContext(), request.Email)
+	if err != nil {
+		if err.Error() == "Internal Server Error" {
+			return response.FailureResponse(ctx, "Internal Server", fiber.StatusInternalServerError)
+		} else {
+			return response.FailureResponse(ctx, "No Such User found", fiber.StatusNotFound)
+		}
+	}
+	var data any = map[string]string{
+		"name":   user.UserName,
+		"email":  user.Email,
+		"avatar": user.AvatarUrl,
+	}
+	return response.SuccessResponse(ctx, "", data, fiber.StatusOK)
+}
+
+// @Summary			Delete User
+// @Description 	This function is used for the allowing user to delete his account
+// @Tags 			User
+// @Accept			json
+// @Produce 		json
+// @Router			/api/v1/auth/profile [Delete]
+// @Success			200 {object} map[string]string
+// @Failure 		404 {object} map[string]string
+func (r *UserHandler) DeleteUser(ctx *fiber.Ctx) error {
+	value := ctx.Locals("user_id")
+	if value == nil {
+		slog.Warn("Unauthorized", "error", errors.New("Unauthorized"))
+		return response.FailureResponse(ctx, "Unauthorized", fiber.StatusUnauthorized)
+	}
+	user_id := value.(uuid.UUID)
+	err := r.Service.RemoveUserAccount(ctx.UserContext(), user_id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response.FailureResponse(ctx, "Can't Delete a non-existing account", fiber.StatusUnauthorized)
+		} else {
+			return response.FailureResponse(ctx, "Internal Server", fiber.StatusInternalServerError)
+		}
+	}
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    "",
+		Expires:  time.Now().Add(-24 * time.Hour),
+		Path:     "/",
+		Domain:   "",
+		Secure:   false,
+		HTTPOnly: true,
+	})
+	return response.SuccessResponse(ctx, "User Account Deleted", nil, fiber.StatusOK)
+}

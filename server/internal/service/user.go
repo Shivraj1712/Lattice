@@ -24,33 +24,33 @@ type UserServiceInterface interface {
 }
 
 type UserServiceHandler struct {
-	repo     repository.UserRepository
-	token    utils.TokenInterface
-	password utils.PasswordInterface
+	Repo     repository.UserRepository
+	Token    utils.TokenInterface
+	Password utils.PasswordInterface
 }
 
 func (r *UserServiceHandler) LocalLogin(ctx context.Context, email string, password string) (string, error) {
-	user, err := r.repo.GetUserByEmail(ctx, email)
+	user, err := r.Repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", err
 	}
-	err = r.password.VerifyPassword(password, *user.HashPassword)
+	err = r.Password.VerifyPassword(password, *user.HashPassword)
 	if err != nil {
 		return "", err
 	}
-	sessionToken, err := r.token.GenerateToken(ctx, user.ID)
+	sessionToken, err := r.Token.GenerateToken(ctx, user.ID)
 	if err != nil {
 		return "", err
 	}
 	return sessionToken, nil
 }
 func (r *UserServiceHandler) LocalSignUp(ctx context.Context, name string, email string, password string) (string, error) {
-	_, err := r.repo.GetUserByEmail(ctx, email)
+	_, err := r.Repo.GetUserByEmail(ctx, email)
 	if err == nil {
 		slog.Error("User with this email already exists", "error", err)
 		return "", errors.New("User Already Exists with this email")
 	}
-	hashPassword, err := r.password.GenerateHash(password)
+	hashPassword, err := r.Password.GenerateHash(password)
 	if err != nil {
 		return "", err
 	}
@@ -59,11 +59,11 @@ func (r *UserServiceHandler) LocalSignUp(ctx context.Context, name string, email
 		Email:        email,
 		HashPassword: &hashPassword,
 	}
-	err = r.repo.CreateUser(ctx, user)
+	err = r.Repo.CreateUser(ctx, user)
 	if err != nil {
 		return "", err
 	}
-	sessionToken, err := r.token.GenerateToken(ctx, user.ID)
+	sessionToken, err := r.Token.GenerateToken(ctx, user.ID)
 	if err != nil {
 		return "", err
 	}
@@ -71,7 +71,7 @@ func (r *UserServiceHandler) LocalSignUp(ctx context.Context, name string, email
 }
 
 func (r *UserServiceHandler) Logout(ctx context.Context, sessionToken string) error {
-	err := r.token.DeleteToken(ctx, sessionToken)
+	err := r.Token.DeleteToken(ctx, sessionToken)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (r *UserServiceHandler) Logout(ctx context.Context, sessionToken string) er
 }
 
 func (r *UserServiceHandler) GetUserProfile(ctx context.Context, user_ID uuid.UUID) (*domain.User, error) {
-	user, err := r.repo.GetUserByID(ctx, user_ID)
+	user, err := r.Repo.GetUserByID(ctx, user_ID)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (r *UserServiceHandler) GetUserProfile(ctx context.Context, user_ID uuid.UU
 }
 
 func (r *UserServiceHandler) RemoveUserAccount(ctx context.Context, user_ID uuid.UUID) error {
-	err := r.repo.DeleteUser(ctx, user_ID)
+	err := r.Repo.DeleteUser(ctx, user_ID)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (r *UserServiceHandler) RemoveUserAccount(ctx context.Context, user_ID uuid
 
 func (r *UserServiceHandler) UpdateAvatar(ctx context.Context, userid uuid.UUID, file *multipart.FileHeader) error {
 	folder := "avatar"
-	err := r.repo.UpdateUserProfileImage(ctx, file, userid, folder)
+	err := r.Repo.UpdateUserProfileImage(ctx, file, userid, folder)
 	if err != nil {
 		return err
 	}
@@ -104,19 +104,26 @@ func (r *UserServiceHandler) UpdateAvatar(ctx context.Context, userid uuid.UUID,
 }
 
 func (r *UserServiceHandler) UpdateDetails(ctx context.Context, name string, password string, userID uuid.UUID) error {
-	hashPassword, err := r.password.GenerateHash(password)
-	if err != nil {
-		return errors.New("Internal Server Error")
-	}
-	err = r.repo.UpdateUserDetails(ctx, name, hashPassword, userID)
-	if err != nil {
-		return err
+	if password != "" {
+		hashPassword, err := r.Password.GenerateHash(password)
+		if err != nil {
+			return errors.New("Internal Server Error")
+		}
+		err = r.Repo.UpdateUserDetails(ctx, name, hashPassword, userID)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := r.Repo.UpdateUserDetails(ctx, name, "", userID)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (r *UserServiceHandler) GetPublicProfile(ctx context.Context, email string) (*domain.User, error) {
-	user, err := r.repo.GetUserByEmail(ctx, email)
+	user, err := r.Repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}

@@ -1,8 +1,6 @@
 package validator
 
 import (
-	"mime/multipart"
-
 	"github.com/go-playground/validator/v10"
 )
 
@@ -19,12 +17,13 @@ type SignUpStruct struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
-type UpdateAvatar struct {
-	File multipart.FileHeader `json:"file"`
-}
-
 type EmailStruct struct {
 	Email string `json:"email" binding:"required,email"`
+}
+
+type UpdateDetailStruct struct {
+	Name     string `json:"name" binding:"omitempty,min=3"`
+	Password *string `json:"password" binding:"omitempty,min=8"`
 }
 
 func Validate(request any) error {
