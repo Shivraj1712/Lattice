@@ -22,10 +22,10 @@ func main() {
 	database.ConnectDB()
 	database.MigrateModels()
 	_ = cache.ConnectRedis()
-
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
+	app.Use(middleware.RateLimiter)
 	handler.OauthInit()
 	router.UserRoutes(app)
 	app.Get("/swagger/*", swagger.HandlerDefault)
