@@ -32,7 +32,6 @@ type UserInterface interface {
 	UpdateUserDetails(ctx *fiber.Ctx) error
 	DeleteUser(ctx *fiber.Ctx) error
 }
-
 type UserHandler struct {
 	Service service.UserServiceInterface
 	Repo    repository.UserRepository
