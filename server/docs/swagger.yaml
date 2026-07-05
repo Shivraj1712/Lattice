@@ -195,4 +195,243 @@ paths:
       summary: User Signup
       tags:
       - Authentication
+  /api/v1/projects:
+    get:
+      consumes:
+      - application/json
+      description: This function is used for the authenticated user to get all of
+        their own projects
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get My Projects
+      tags:
+      - Project
+    post:
+      consumes:
+      - multipart/form-data
+      description: This function is used for the authenticated user to create a new
+        project with an image
+      parameters:
+      - description: Project title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Project description
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Project category
+        in: formData
+        name: category
+        type: string
+      - description: GitHub repository link
+        in: formData
+        name: github_link
+        required: true
+        type: string
+      - description: Live demo link
+        in: formData
+        name: live_demo_link
+        required: true
+        type: string
+      - description: Project image
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create Project
+      tags:
+      - Project
+  /api/v1/projects/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: This function is used for the authenticated user to delete their
+        own project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete Project
+      tags:
+      - Project
+    put:
+      consumes:
+      - application/json
+      description: This function is used for the authenticated user to update the
+        details of their own project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Project Details
+      tags:
+      - Project
+  /api/v1/projects/all:
+    get:
+      consumes:
+      - application/json
+      description: This function is used for getting all the projects, no login required
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get All Projects
+      tags:
+      - Project
+  /api/v1/projects/email:
+    post:
+      consumes:
+      - application/json
+      description: This function is used for getting all the projects of a user by
+        their email, no login required
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Projects By Email
+      tags:
+      - Project
+  /api/v1/projects/image/{id}:
+    put:
+      consumes:
+      - multipart/form-data
+      description: This function is used for the authenticated user to update the
+        image of their own project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New project image
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Project Image
+      tags:
+      - Project
+  /api/v1/projects/search:
+    get:
+      consumes:
+      - application/json
+      description: This function is used for searching and filtering projects by title,
+        description, or category
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Category filter
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Search And Filter Projects
+      tags:
+      - Project
 swagger: "2.0"
