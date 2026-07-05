@@ -7,52 +7,6 @@ info:
   title: Lattice API
   version: "1.0"
 paths:
-  /:
-    get:
-      description: This function call initialises the feature for google based authentication
-        using Goth
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Google Oauth function initialization
-      tags:
-      - Authentication
-  /api/v1/auth/google:
-    get:
-      consumes:
-      - application/json
-      description: This function is used to call when a user wants to start the authentication
-        using Google auth
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Begin google authentication
-      tags:
-      - Authentication
   /api/v1/auth/login:
     post:
       consumes:

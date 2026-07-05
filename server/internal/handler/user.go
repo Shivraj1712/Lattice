@@ -119,8 +119,10 @@ func (r *UserHandler) Login(ctx *fiber.Ctx) error {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return response.FailureResponse(ctx, "User with this Email Do not exists", fiber.StatusBadRequest)
-		} else if err.Error() == "Internal Server Error" {
-			return response.FailureResponse(ctx, "Internal Server Error", fiber.StatusInternalServerError)
+		} else if err.Error() == "account registered via Google, please use Google login" {
+			return response.FailureResponse(ctx, "Please login using Google", fiber.StatusBadRequest)
+		} else if err.Error() == "Internal server err" {
+			return response.FailureResponse(ctx, "Internal Server err", fiber.StatusInternalServerError)
 		} else {
 			return response.FailureResponse(ctx, "Invalid Credentials", fiber.StatusBadRequest)
 		}
@@ -190,10 +192,14 @@ func (r *UserHandler) GetUserProfile(ctx *fiber.Ctx) error {
 		slog.Warn("User ID not found in the server", "error", errors.New("Unauthorized"))
 		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
 	}
-	user_id := value.(uuid.UUID)
+	user_id, ok := value.(uuid.UUID)
+	if !ok {
+		slog.Error("Unauthorized", "error", fiber.ErrUnauthorized)
+		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
+	}
 	user, er := r.Service.GetUserProfile(ctx.UserContext(), user_id)
 	if er != nil {
-		if er.Error() == "Internal Server Error" {
+		if er.Error() == "Internal server error" {
 			return response.FailureResponse(ctx, "Internal Server", fiber.StatusInternalServerError)
 		} else {
 			return response.FailureResponse(ctx, "Unauthorized", fiber.StatusUnauthorized)
@@ -251,7 +257,11 @@ func (r *UserHandler) UpdateUserImage(ctx *fiber.Ctx) error {
 		slog.Warn("User ID not found in the server", "error", errors.New("Unauthorized"))
 		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
 	}
-	user_id := value.(uuid.UUID)
+	user_id, ok := value.(uuid.UUID)
+	if !ok {
+		slog.Error("Unauthorized", "error", fiber.ErrUnauthorized)
+		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
+	}
 	newERR := r.Service.UpdateAvatar(ctx.UserContext(), user_id, request)
 	if newERR != nil {
 		if errors.Is(newERR, gorm.ErrRecordNotFound) {
@@ -286,7 +296,12 @@ func (r *UserHandler) UpdateUserDetails(ctx *fiber.Ctx) error {
 		slog.Warn("User ID not found in the server", "error", errors.New("Unauthorized"))
 		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
 	}
-	user_id := value.(uuid.UUID)
+
+	user_id, ok := value.(uuid.UUID)
+	if !ok {
+		slog.Error("Unauthorized", "error", fiber.ErrUnauthorized)
+		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
+	}
 	var password string
 	if request.Password != nil {
 		password = *request.Password
@@ -324,7 +339,7 @@ func (r *UserHandler) GetPublicProfile(ctx *fiber.Ctx) error {
 	}
 	user, err := r.Service.GetPublicProfile(ctx.UserContext(), request.Email)
 	if err != nil {
-		if err.Error() == "Internal Server Error" {
+		if err.Error() == "Internal server err" {
 			return response.FailureResponse(ctx, "Internal Server", fiber.StatusInternalServerError)
 		} else {
 			return response.FailureResponse(ctx, "No Such User found", fiber.StatusNotFound)
@@ -352,7 +367,12 @@ func (r *UserHandler) DeleteUser(ctx *fiber.Ctx) error {
 		slog.Warn("Unauthorized", "error", errors.New("Unauthorized"))
 		return response.FailureResponse(ctx, "Unauthorized", fiber.StatusUnauthorized)
 	}
-	user_id := value.(uuid.UUID)
+
+	user_id, ok := value.(uuid.UUID)
+	if !ok {
+		slog.Error("Unauthorized", "error", fiber.ErrUnauthorized)
+		return response.FailureResponse(ctx, "Unauthorize", fiber.StatusUnauthorized)
+	}
 	err := r.Service.RemoveUserAccount(ctx.UserContext(), user_id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

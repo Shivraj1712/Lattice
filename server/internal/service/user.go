@@ -34,6 +34,9 @@ func (r *UserServiceHandler) LocalLogin(ctx context.Context, email string, passw
 	if err != nil {
 		return "", err
 	}
+	if user.HashPassword == nil {
+		return "", errors.New("account registered via Google, please use Google login")
+	}
 	err = r.Password.VerifyPassword(password, *user.HashPassword)
 	if err != nil {
 		return "", err
@@ -95,7 +98,7 @@ func (r *UserServiceHandler) RemoveUserAccount(ctx context.Context, user_ID uuid
 }
 
 func (r *UserServiceHandler) UpdateAvatar(ctx context.Context, userid uuid.UUID, file *multipart.FileHeader) error {
-	folder := "avatar"
+	folder := "Lattice/avatar"
 	err := r.Repo.UpdateUserProfileImage(ctx, file, userid, folder)
 	if err != nil {
 		return err

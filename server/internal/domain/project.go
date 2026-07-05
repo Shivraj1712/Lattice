@@ -14,6 +14,8 @@ type Project struct {
 	ProjectImagePublicID string    `json:"-" gorm:"type:text;not null"`
 	Title                string    `json:"title" gorm:"type:text;not null;index"`
 	ProjectDescription   string    `json:"description" gorm:"type:text;not null;index"`
+	LiveDemoLink         string    `json:"live_demo_link" gorm:"type:varchar(255)"`
+	GithubLink           string    `json:"github_link" gorm:"type:varchar(255)"`
 	Category             string    `json:"category" gorm:"type:text;not null;index;default:'NoCategory'"`
 	CreatedAt            time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt            time.Time `json:"updated_at" gorm:"autoUpdateTime"`

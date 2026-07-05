@@ -4,7 +4,7 @@ CREATE TABLE projects (
     project_image_url TEXT NOT NULL,
     project_image_public_id TEXT NOT NULL,
     title TEXT NOT NULL,
-    poject_description TEXT NOT NULL,
+    project_description TEXT NOT NULL,
     category TEXT NOT NULL DEFAULT 'NoCategory',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),

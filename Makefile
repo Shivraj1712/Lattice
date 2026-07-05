@@ -1,7 +1,7 @@
 SERVER_DIR=server
 CLIENT_DIR=client 
 
-.PHONY : client dev tidy server server-build client-build
+.PHONY : client dev tidy server server-build client-build swag
 
 client:
 	cd $(CLIENT_DIR) && bun create-next-app@latest
@@ -14,6 +14,6 @@ server:
 swag: 
 	cd $(SERVER_DIR) && swag init -d . -g cmd/api/main.go --parseDependency --parseInternal -o docs
 server-build:
-	cd $(SERVER_DIR) && go build -o ./cmd/api/main.go
+	cd $(SERVER_DIR) && go build -o ./bin/server ./cmd/api/main.go
 client-build:
 	cd $(CLIENT_DIR) && bun build

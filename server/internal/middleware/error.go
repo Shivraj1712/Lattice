@@ -5,11 +5,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type AppError struct {
-	code    int
-	message string
-}
-
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
 	code := fiber.StatusInternalServerError
 	message := "Internal Server Error"

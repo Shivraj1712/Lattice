@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log/slog"
+
 	_ "github.com/Shivraj1712/Lattice.git/docs"
 	"github.com/Shivraj1712/Lattice.git/internal/cache"
 	"github.com/Shivraj1712/Lattice.git/internal/config"
@@ -9,6 +11,7 @@ import (
 	"github.com/Shivraj1712/Lattice.git/internal/middleware"
 	"github.com/Shivraj1712/Lattice.git/internal/router"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
 )
 
@@ -25,9 +28,19 @@ func main() {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
-	app.Use(middleware.RateLimiter)
+	app.Use(cors.New(cors.Config{
+		AllowOriginsFunc: func(origin string) bool {
+			return true
+		},
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowCredentials: true,
+	}))
+	app.Use(middleware.RateLimiter())
 	handler.OauthInit()
+	router.ProjectRoutes(app)
 	router.UserRoutes(app)
 	app.Get("/swagger/*", swagger.HandlerDefault)
-	app.Listen(":8080")
+	if err := app.Listen(":8080"); err != nil {
+		slog.Error("Server listen failed", "error", err)
+	}
 }
