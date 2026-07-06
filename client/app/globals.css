@@ -1,26 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #181616;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  
+  --color-brand-black: #181616;      /* Carbon Black */
+  --color-brand-white: #ffffff;      /* White */
+  --color-brand-rose: #cc3189;       /* Hot Rose */
+  --color-brand-pink: #e698c4;       /* Pink Mist */
+  --color-brand-border: #181616;     /* Thick Black Borders */
+  --color-brand-hover: #cc3189;      /* Hot Rose Hover */
+  
+  --font-sans: 'Outfit', sans-serif;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Custom Webkit scrollbar matching new palette */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #ffffff;
+  border-left: 2px solid #181616;
+}
+::-webkit-scrollbar-thumb {
+  background: #181616;
+  border: 2px solid #ffffff;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cc3189;
+}
+
+/* --- Awwwards/Editorial Utility Classes --- */
+
+/* Crisp Editorial Borders */
+.awwwards-border {
+  border: 2px solid #181616;
+}
+
+.awwwards-border-b {
+  border-bottom: 2px solid #181616;
+}
+
+.awwwards-border-t {
+  border-top: 2px solid #181616;
+}
+
+.awwwards-border-r {
+  border-right: 2px solid #181616;
+}
+
+.awwwards-border-l {
+  border-left: 2px solid #181616;
+}
+
+/* Clean Brutalist Shadows and Cards */
+.awwwards-card {
+  background-color: #ffffff;
+  border: 2px solid #181616;
+  box-shadow: 4px 4px 0px 0px #181616;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.awwwards-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #181616;
+}
+
+/* Awwwards Typographic Button (Primary Black Accent) */
+.awwwards-btn-primary {
+  background-color: #181616;
+  color: #ffffff;
+  border: 2px solid #181616;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  border-radius: 0px; /* Sharp corners for brutalist look */
+}
+
+.awwwards-btn-primary:hover {
+  background-color: #cc3189;
+  border-color: #cc3189;
+  color: #ffffff;
+}
+
+.awwwards-btn-secondary {
+  background-color: #ffffff;
+  color: #181616;
+  border: 2px solid #181616;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  border-radius: 0px;
+}
+
+.awwwards-btn-secondary:hover {
+  background-color: #e698c4;
+  border-color: #181616;
+  color: #181616;
+}
+
+/* Brutalist/Modern Form Fields */
+.awwwards-input {
+  background-color: #ffffff;
+  border: 2px solid #181616;
+  color: #181616;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.15s ease-in-out;
+  border-radius: 0px;
+}
+
+.awwwards-input:focus {
+  background-color: #ffffff;
+  border-color: #cc3189;
+  box-shadow: 2px 2px 0px 0px #181616;
 }
