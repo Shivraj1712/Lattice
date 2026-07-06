@@ -34,9 +34,8 @@ func main() {
 		ErrorHandler: middleware.ErrorHandler,
 	})
 	app.Use(cors.New(cors.Config{
-		AllowOriginsFunc: func(origin string) bool {
-			return true
-		},
+		AllowOrigins:     "http://localhost:3000",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowCredentials: true,
 	}))
