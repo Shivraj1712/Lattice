@@ -10,6 +10,7 @@ import (
 	"github.com/Shivraj1712/Lattice.git/internal/handler"
 	"github.com/Shivraj1712/Lattice.git/internal/middleware"
 	"github.com/Shivraj1712/Lattice.git/internal/router"
+	"github.com/Shivraj1712/Lattice.git/pkg/media"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
@@ -25,6 +26,10 @@ func main() {
 	database.ConnectDB()
 	database.MigrateModels()
 	_ = cache.ConnectRedis()
+	if err := media.ConnectCloudinary(); err != nil {
+		slog.Error("Failed to connect to Cloudinary", "error", err)
+		panic(err)
+	}
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})

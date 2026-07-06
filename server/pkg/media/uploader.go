@@ -12,7 +12,7 @@ import (
 
 func UploadImage(ctx context.Context, file *multipart.FileHeader, folder string) (string, string, error) {
 	content_type := file.Header.Get("Content-Type")
-	if !strings.HasPrefix(content_type, "Image/") {
+	if !strings.HasPrefix(strings.ToLower(content_type), "Image/") {
 		return "", "", errors.New("Invalid Media")
 	}
 	src, err := file.Open()

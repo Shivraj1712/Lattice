@@ -39,7 +39,7 @@ func (r *ProjectServiceHandler) CreateService(ctx context.Context, title string,
 	}
 	url, publicID, err := media.UploadImage(ctx, file, "Lattice/projects")
 	if err != nil {
-		slog.Error("Failed to create project", "error", fiber.ErrInternalServerError)
+		slog.Error("Failed to create project", "error", err)
 		return fiber.ErrInternalServerError
 	}
 	project.ProjectImageUrl = url
