@@ -46,6 +46,7 @@ func OauthInit() {
 		"email",
 		"profile",
 	)
+	googleProvider.SetPrompt("select_account")
 	goth.UseProviders(googleProvider)
 }
 
@@ -93,7 +94,7 @@ func (r *UserHandler) CompleteOauth(ctx *fiber.Ctx) error {
 		HTTPOnly: true,
 		SameSite: "Lax",
 	})
-	return response.SuccessResponse(ctx, "Google Login Successful!", nil, fiber.StatusOK)
+	return ctx.Redirect("http://localhost:3000")
 }
 
 // @Summary			User Login

@@ -136,3 +136,19 @@ body {
   border-color: #cc3189;
   box-shadow: 2px 2px 0px 0px #181616;
 }
+
+/* Toast Slide-in Animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

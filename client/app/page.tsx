@@ -11,7 +11,7 @@ import { AuthModal } from "../components/auth-modal";
 import { Loader2, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   // Projects State
   const [projects, setProjects] = useState<Project[]>([]);
@@ -31,21 +31,12 @@ export default function Home() {
   const [manageOpen, setManageOpen] = useState(false);
   const [manageTab, setManageTab] = useState<"projects" | "add" | "profile">("projects");
 
-  // Fetch projects on load or search/category change
+  // Fetch projects on load
   const loadProjects = async () => {
     setLoading(true);
     setError(null);
     try {
-      let response;
-      if (searchTerm || selectedCategory) {
-        response = await api.searchAndFilterProjects({
-          search: searchTerm,
-          category: selectedCategory,
-        });
-      } else {
-        response = await api.getAllProjects();
-      }
-
+      const response = await api.getAllProjects();
       if (response.success && response.data) {
         setProjects(response.data);
       } else {
@@ -59,14 +50,40 @@ export default function Home() {
     }
   };
 
-  // Debounced search trigger
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      loadProjects();
-    }, 300);
+    loadProjects();
+  }, []);
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, selectedCategory]);
+  // Safeguard: Close Auth Modal if user is logged in
+  useEffect(() => {
+    if (user && authOpen) {
+      setAuthOpen(false);
+    }
+  }, [user, authOpen]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-white text-brand-black flex flex-col items-center justify-center gap-4 select-none">
+        <div className="w-10 h-10 border-4 border-brand-black border-t-brand-rose animate-spin rounded-none shadow-[3px_3px_0px_0px_rgba(24,22,22,1)]" />
+        <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Syncing Lattice Session...</p>
+      </div>
+    );
+  }
+
+  // Compute filtered projects in memory
+  const filteredProjects = projects.filter((proj) => {
+    if (selectedCategory && proj.category.toLowerCase() !== selectedCategory.toLowerCase()) {
+      return false;
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      return (
+        proj.title.toLowerCase().includes(term) ||
+        proj.description.toLowerCase().includes(term)
+      );
+    }
+    return true;
+  });
 
   const openAuthModal = (tab: "login" | "signup") => {
     setAuthTab(tab);
@@ -80,13 +97,13 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-brand-black selection:bg-brand-rose selection:text-white">
-      {/* Dynamic Header */}
       <Header
         onSearch={setSearchTerm}
         onSelectCategory={setSelectedCategory}
         selectedCategory={selectedCategory}
         onOpenAuth={openAuthModal}
         onOpenManage={openManageModal}
+        projects={projects}
       />
 
       {/* Brutalist Hero Banner Section (Reduced padding) */}
@@ -137,16 +154,20 @@ export default function Home() {
             {/* Brutalist dividers statistics grid */}
             <div className="grid grid-cols-3 border-2 border-brand-black divide-x-2 divide-brand-black bg-white rounded-none shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] p-4 max-w-md">
               <div>
-                <p className="text-xl font-black text-brand-black">350+</p>
+                <p className="text-xl font-black text-brand-black">{projects.length}</p>
                 <p className="text-[9px] text-brand-black font-black uppercase tracking-wider">Projects</p>
               </div>
               <div className="pl-4">
-                <p className="text-xl font-black text-brand-black">1.2K</p>
+                <p className="text-xl font-black text-brand-black">
+                  {new Set(projects.map((p) => p.user_id)).size}
+                </p>
                 <p className="text-[9px] text-brand-black font-black uppercase tracking-wider">Creators</p>
               </div>
               <div className="pl-4">
-                <p className="text-xl font-black text-brand-black">15K</p>
-                <p className="text-[9px] text-brand-black font-black uppercase tracking-wider">Queries</p>
+                <p className="text-xl font-black text-brand-black">
+                  {projects.filter((p) => p.live_demo_link).length}
+                </p>
+                <p className="text-[9px] text-brand-black font-black uppercase tracking-wider">Live Demos</p>
               </div>
             </div>
           </div>
@@ -166,11 +187,11 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-2.5">
-                  <h3 className="text-xl font-black uppercase tracking-tight text-brand-black group-hover:text-brand-rose transition-colors">
-                    Lattice Portal Core
+                  <h3 className="text-xl font-black uppercase tracking-tight text-brand-black group-hover:text-brand-rose transition-colors truncate">
+                    {projects[0] ? projects[0].title : "Lattice Portal Core"}
                   </h3>
-                  <p className="text-xs text-brand-black font-semibold leading-relaxed">
-                    A high-performance repository manager featuring backend Go/Fiber router stacks, SQLite/PostgreSQL schemas, and Next.js static layouts.
+                  <p className="text-xs text-brand-black font-semibold leading-relaxed line-clamp-3">
+                    {projects[0] ? projects[0].description : "A high-performance repository manager featuring backend Go/Fiber router stacks, SQLite/PostgreSQL schemas, and Next.js static layouts."}
                   </p>
                 </div>
               </div>
@@ -179,37 +200,53 @@ export default function Home() {
               <div className="border-2 border-brand-black p-4 space-y-2.5 font-mono text-[10px] text-brand-black bg-zinc-50 rounded-none overflow-hidden">
                 <div className="flex justify-between items-center gap-2 overflow-hidden">
                   <span className="shrink-0">PROJECT NAME:</span>
-                  <span className="font-bold truncate text-right">LATTICE PORTAL CORE</span>
+                  <span className="font-bold truncate text-right uppercase">
+                    {projects[0] ? projects[0].title : "LATTICE PORTAL CORE"}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
                   <span>REPOSITORY:</span>
-                  <span className="font-bold truncate text-right">GITHUB.COM/SHIVRAJ/LATTICE</span>
+                  <span className="font-bold truncate text-right uppercase">
+                    {projects[0] ? projects[0].github_link.replace("https://", "").replace("http://", "") : "GITHUB.COM/SHIVRAJ/LATTICE"}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
-                  <span>ROUTING HANDLER:</span>
-                  <span className="font-bold truncate text-right">GO FIBER V3</span>
+                  <span>CATEGORY:</span>
+                  <span className="font-bold truncate text-right uppercase">
+                    {projects[0] ? projects[0].category : "FULLSTACK"}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
-                  <span>DATABASE:</span>
-                  <span className="font-bold truncate text-right">POSTGRESQL 16</span>
+                  <span>PUBLISHED:</span>
+                  <span className="font-bold truncate text-right uppercase">
+                    {projects[0] ? new Date(projects[0].created_at).toLocaleDateString() : "07/08/2026"}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
-                  <span>STATUS / HEALTH:</span>
-                  <span className="text-emerald-600 font-bold truncate text-right">100% ONLINE</span>
-                </div>
-                <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
-                  <span>ENVIRONMENT:</span>
-                  <span className="font-bold text-brand-black truncate text-right">PRODUCTION LIVE</span>
+                  <span>DEMO LINK:</span>
+                  <span className="font-bold text-brand-rose truncate text-right uppercase">
+                    {projects[0] ? projects[0].live_demo_link.replace("https://", "").replace("http://", "") : "LATTICE-DEMO.VERCEL.APP"}
+                  </span>
                 </div>
               </div>
 
-              {/* Author footer (Author as Shivraj) */}
+              {/* Author footer */}
               <div className="flex items-center justify-between border-t-2 border-brand-black pt-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-brand-black border-2 border-brand-black flex items-center justify-center text-[10px] font-black uppercase text-white">
-                    S
-                  </div>
-                  <span className="text-xs font-black uppercase tracking-wider text-brand-black">Shivraj</span>
+                  {projects[0]?.user?.avatar_url ? (
+                    <img
+                      src={projects[0].user.avatar_url}
+                      alt={projects[0].user.name}
+                      className="w-6 h-6 object-cover border-2 border-brand-black"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 bg-brand-black border-2 border-brand-black flex items-center justify-center text-[10px] font-black uppercase text-white">
+                      {projects[0] ? projects[0].user?.name.charAt(0).toUpperCase() : "S"}
+                    </div>
+                  )}
+                  <span className="text-xs font-black uppercase tracking-wider text-brand-black truncate max-w-[150px]">
+                    {projects[0] ? projects[0].user?.name : "Shivraj"}
+                  </span>
                 </div>
                 <span className="text-[9px] font-black uppercase tracking-wider text-brand-black">Author</span>
               </div>
@@ -268,10 +305,16 @@ export default function Home() {
               </button>
             )}
           </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-brand-black bg-zinc-50 p-8 max-w-lg mx-auto rounded-none">
+            <p className="text-xs font-black uppercase text-brand-black tracking-wider mb-4">
+              No projects match your search or filter.
+            </p>
+          </div>
         ) : (
           /* Cards Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {projects.map((proj) => (
+            {filteredProjects.map((proj) => (
               <ProjectCard
                 key={proj.project_id}
                 project={proj}

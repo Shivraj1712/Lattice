@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/auth-context";
+import { useToast } from "../context/toast-context";
 import { api, Project } from "../lib/api";
 import {
   X,
@@ -46,12 +47,40 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   onClose,
   initialTab = "projects",
 }) => {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"projects" | "add" | "profile">(initialTab);
+  const toast = useToast();
   
-  // Projects List State
+  // Local lists
   const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Confirmation Modal State
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const requestConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmConfig({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
+  };
+
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   // Form States (Add Project)
@@ -74,11 +103,6 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   const [profilePassword, setProfilePassword] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   
-  // Status states
-  const [actionLoading, setActionLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const projectImageEditRef = useRef<HTMLInputElement>(null);
@@ -109,8 +133,6 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchMyProjects();
-      setError(null);
-      setSuccess(null);
       setEditingProject(null);
     }
   }, [isOpen, user]);
@@ -123,8 +145,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
   // Clear messages helper
   const resetStatus = () => {
-    setError(null);
-    setSuccess(null);
+    // No-op (handled by global toasts)
   };
 
   // --- Handlers ---
@@ -134,7 +155,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     e.preventDefault();
     resetStatus();
     if (!imageFile) {
-      setError("Please select a cover image");
+      toast.error("Please select a cover image");
       return;
     }
     setActionLoading(true);
@@ -148,7 +169,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         category,
         image: imageFile,
       });
-      setSuccess("Project created successfully!");
+      toast.success("Project created successfully!");
       // Reset fields
       setTitle("");
       setDescription("");
@@ -162,7 +183,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       await fetchMyProjects();
       setActiveTab("projects");
     } catch (err: any) {
-      setError(err.message || "Failed to create project");
+      toast.error(err.message || "Failed to create project");
     } finally {
       setActionLoading(false);
     }
@@ -194,11 +215,11 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         github_link: editGithubLink,
         live_demo_link: editLiveDemoLink,
       });
-      setSuccess("Project details updated!");
+      toast.success("Project details updated!");
       setEditingProject(null);
       await fetchMyProjects();
     } catch (err: any) {
-      setError(err.message || "Failed to update project");
+      toast.error(err.message || "Failed to update project");
     } finally {
       setActionLoading(false);
     }
@@ -213,11 +234,11 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
     try {
       await api.updateProjectImage(editingProject.project_id, file);
-      setSuccess("Project cover image updated successfully!");
+      toast.success("Project cover image updated successfully!");
       setEditingProject(null);
       await fetchMyProjects();
     } catch (err: any) {
-      setError(err.message || "Failed to update project image");
+      toast.error(err.message || "Failed to update project image");
     } finally {
       setActionLoading(false);
     }
@@ -225,19 +246,23 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
   // Delete Project
   const handleDeleteProject = async (projectId: string) => {
-    if (!confirm("Are you sure you want to delete this project? This action is permanent.")) return;
-    resetStatus();
-    setActionLoading(true);
-
-    try {
-      await api.deleteProject(projectId);
-      setSuccess("Project deleted.");
-      await fetchMyProjects();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete project");
-    } finally {
-      setActionLoading(false);
-    }
+    requestConfirm(
+      "Delete Project",
+      "Are you sure you want to delete this project? This action is permanent and cannot be undone.",
+      async () => {
+        resetStatus();
+        setActionLoading(true);
+        try {
+          await api.deleteProject(projectId);
+          toast.success("Project deleted.");
+          await fetchMyProjects();
+        } catch (err: any) {
+          toast.error(err.message || "Failed to delete project");
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    );
   };
 
   // Update Profile Name/Password
@@ -255,11 +280,11 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         payload.password = profilePassword;
       }
       await api.updateUserDetails(payload);
-      setSuccess("Account details updated successfully!");
+      toast.success("Account details updated successfully!");
       setProfilePassword("");
       await refreshUser();
     } catch (err: any) {
-      setError(err.message || "Failed to update profile details");
+      toast.error(err.message || "Failed to update profile details");
     } finally {
       setActionLoading(false);
     }
@@ -275,11 +300,11 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
     try {
       await api.updateUserImage(file);
-      setSuccess("Avatar updated successfully!");
+      toast.success("Avatar updated successfully!");
       setAvatarFile(null);
       await refreshUser();
     } catch (err: any) {
-      setError(err.message || "Failed to upload avatar");
+      toast.error(err.message || "Failed to upload avatar");
     } finally {
       setActionLoading(false);
     }
@@ -287,25 +312,25 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
   // Delete User Account
   const handleDeleteAccount = async () => {
-    if (
-      !confirm(
-        "WARNING: Deleting your account will remove your profile and ALL your shared projects. This cannot be undone. Do you wish to continue?"
-      )
-    ) {
-      return;
-    }
-    resetStatus();
-    setActionLoading(true);
-
-    try {
-      await api.deleteUser();
-      onClose();
-      await logout();
-      window.location.reload();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete user account");
-      setActionLoading(false);
-    }
+    requestConfirm(
+      "Delete Account",
+      "WARNING: Deleting your account will remove your profile and ALL your shared projects. This cannot be undone. Do you wish to continue?",
+      async () => {
+        resetStatus();
+        setActionLoading(true);
+        try {
+          await api.deleteUser();
+          onClose();
+          await logout();
+          toast.success("Account deleted successfully.");
+          window.location.reload();
+        } catch (err: any) {
+          toast.error(err.message || "Failed to delete user account");
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    );
   };
 
   return (
@@ -399,19 +424,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
             </button>
           </div>
 
-          {/* Messages */}
-          <div className="px-6 pt-6">
-            {error && (
-              <div className="p-3.5 text-xs font-bold uppercase tracking-wider bg-brand-rose/10 border-2 border-brand-rose text-brand-rose rounded-none">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="p-3.5 text-xs font-bold uppercase tracking-wider bg-emerald-500/10 border-2 border-emerald-500 text-emerald-700 rounded-none">
-                {success}
-              </div>
-            )}
-          </div>
+          {/* Messages (handled via floating toasts now) */}
 
           {/* Tab Content */}
           <div className="p-6 flex-1">
@@ -612,9 +625,9 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                   <button
                     type="submit"
                     disabled={actionLoading}
-                    className="awwwards-btn-primary flex-1 py-3.5 rounded-none font-bold text-xs uppercase"
+                    className="awwwards-btn-primary flex items-center justify-center gap-2 flex-1 py-3.5 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {actionLoading ? <Loader2 size={14} className="animate-spin" /> : "Save Changes"}
                   </button>
                   <button
                     type="button"
@@ -734,7 +747,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="awwwards-btn-primary flex items-center justify-center gap-2 w-full py-4 mt-4 rounded-none font-bold text-xs uppercase"
+                  className="awwwards-btn-primary flex items-center justify-center gap-2 w-full py-4 mt-4 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {actionLoading ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -825,9 +838,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     <button
                       type="submit"
                       disabled={actionLoading}
-                      className="awwwards-btn-primary px-5 py-2.5 rounded-none text-xs"
+                      className="awwwards-btn-primary flex items-center gap-2 px-5 py-2.5 rounded-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Save Account Details
+                      {actionLoading && <Loader2 size={12} className="animate-spin" />}
+                      <span>Save Account Details</span>
                     </button>
                   </form>
                 </div>
@@ -845,9 +859,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     type="button"
                     onClick={handleDeleteAccount}
                     disabled={actionLoading}
-                    className="awwwards-btn-primary py-2.5 px-5 bg-brand-rose border-brand-rose hover:bg-brand-rose/90 rounded-none text-xs"
+                    className="awwwards-btn-primary flex items-center gap-2 py-2.5 px-5 bg-brand-rose border-brand-rose hover:bg-brand-rose/90 rounded-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Delete My Account
+                    {actionLoading && <Loader2 size={12} className="animate-spin" />}
+                    <span>Delete My Account</span>
                   </button>
                 </div>
 
@@ -858,6 +873,36 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         </div>
 
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {confirmConfig.isOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white border-4 border-brand-black p-6 max-w-sm w-full shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] space-y-4 rounded-none animate-slide-in">
+            <div className="flex items-center gap-2 text-brand-rose">
+              <ShieldAlert size={20} />
+              <h3 className="text-sm font-black uppercase tracking-wider">{confirmConfig.title}</h3>
+            </div>
+            <p className="text-xs text-zinc-700 font-semibold leading-relaxed">
+              {confirmConfig.message}
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={confirmConfig.onConfirm}
+                className="awwwards-btn-primary flex-1 py-3 bg-brand-rose border-brand-rose hover:bg-brand-rose/90 text-white rounded-none font-bold text-xs uppercase cursor-pointer"
+              >
+                Yes, Proceed
+              </button>
+              <button
+                onClick={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+                className="awwwards-btn-secondary flex-1 py-3 rounded-none font-bold text-xs uppercase cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

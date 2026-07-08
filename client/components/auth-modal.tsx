@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "../context/auth-context";
+import { useToast } from "../context/toast-context";
 import { X, Lock, Mail, User as UserIcon, Loader2, ArrowRight } from "lucide-react";
 import { api } from "../lib/api";
 
@@ -16,7 +17,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialTab = "login",
 }) => {
-  const { login, signUp } = useAuth();
+  const { user, login, signUp, refreshUser } = useAuth();
+  const toast = useToast();
   const [tab, setTab] = useState<"login" | "signup">(initialTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +26,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen || user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +37,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (tab === "login") {
         if (!email || !password) throw new Error("Please fill in all fields");
         await login({ email, password });
+        toast.success("Welcome back! Logged in successfully.");
       } else {
         if (!name || !email || !password) throw new Error("Please fill in all fields");
         if (name.length < 3) throw new Error("Name must be at least 3 characters");
         if (password.length < 8) throw new Error("Password must be at least 8 characters");
         await signUp({ name, email, password });
+        toast.success("Account created successfully! Welcome to Lattice.");
       }
       onClose();
     } catch (err: any) {
@@ -119,7 +123,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="awwwards-btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-none font-bold text-xs uppercase"
+              className="awwwards-btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <Loader2 size={16} className="animate-spin" />

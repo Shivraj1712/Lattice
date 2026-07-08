@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/auth-context";
+import { useToast } from "../context/toast-context";
 import { isOffline } from "../lib/api";
 import {
   Search,
@@ -19,6 +20,7 @@ interface HeaderProps {
   selectedCategory: string;
   onOpenAuth: (tab: "login" | "signup") => void;
   onOpenManage: (tab: "projects" | "add" | "profile") => void;
+  projects: any[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,8 +29,10 @@ export const Header: React.FC<HeaderProps> = ({
   selectedCategory,
   onOpenAuth,
   onOpenManage,
+  projects = [],
 }) => {
   const { user, logout } = useAuth();
+  const toast = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   
   // Dropdown states
@@ -77,16 +81,20 @@ export const Header: React.FC<HeaderProps> = ({
     setExploreMenuOpen(false);
   };
 
-  // Mock Category Counts
+  const getCategoryCount = (catName: string) => {
+    if (catName === "All") return projects.length;
+    return projects.filter(p => p.category?.toLowerCase() === catName.toLowerCase()).length;
+  };
+
   const CATEGORY_ITEMS = [
-    { name: "All", label: "All Projects", count: "350" },
-    { name: "Frontend", label: "Frontend", count: "124" },
-    { name: "Backend", label: "Backend", count: "98" },
-    { name: "Fullstack", label: "Fullstack", count: "112" },
-    { name: "AI/ML", label: "AI/ML", count: "16" },
-    { name: "Design", label: "Design", count: "25" },
-    { name: "Mobile", label: "Mobile", count: "12" },
-    { name: "Other", label: "Other", count: "18" },
+    { name: "All", label: "All Projects", count: getCategoryCount("All").toString() },
+    { name: "Frontend", label: "Frontend", count: getCategoryCount("Frontend").toString() },
+    { name: "Backend", label: "Backend", count: getCategoryCount("Backend").toString() },
+    { name: "Fullstack", label: "Fullstack", count: getCategoryCount("Fullstack").toString() },
+    { name: "AI/ML", label: "AI/ML", count: getCategoryCount("AI/ML").toString() },
+    { name: "Design", label: "Design", count: getCategoryCount("Design").toString() },
+    { name: "Mobile", label: "Mobile", count: getCategoryCount("Mobile").toString() },
+    { name: "Other", label: "Other", count: getCategoryCount("Other").toString() },
   ];
 
   return (
@@ -215,6 +223,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <button
                         onClick={async () => {
                           await logout();
+                          toast.success("Logged out successfully.");
                           setProfileDropdownOpen(false);
                         }}
                         className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs font-black uppercase text-brand-rose hover:bg-brand-rose/10 transition-colors text-left border-t-2 border-brand-black cursor-pointer"
