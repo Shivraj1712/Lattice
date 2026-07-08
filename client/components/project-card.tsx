@@ -92,16 +92,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) =>
             {project.user?.avatar_url ? (
               <img
                 src={project.user.avatar_url}
-                alt={project.user.name}
+                alt={project.user.name || "Shivraj"}
                 className="w-6 h-6 object-cover border-2 border-brand-black rounded-none"
               />
             ) : (
-              <div className="w-6 h-6 bg-brand-pink border-2 border-brand-black rounded-none flex items-center justify-center">
-                <User size={10} className="text-white" />
+              <div className="w-6 h-6 bg-brand-pink border-2 border-brand-black rounded-none flex items-center justify-center text-[10px] font-black text-brand-black uppercase">
+                {(project.user?.name || "Shivraj").charAt(0).toUpperCase()}
               </div>
             )}
             <span className="text-[10px] font-black uppercase tracking-wider text-brand-black truncate max-w-[120px]">
-              {project.user?.name || "Developer"}
+              {project.user?.name || "Shivraj"}
             </span>
           </div>
           

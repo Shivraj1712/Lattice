@@ -8,6 +8,7 @@ import { ProjectCard } from "../components/project-card";
 import { ProjectDetailModal } from "../components/project-detail-modal";
 import { ProjectManageModal } from "../components/project-manage-modal";
 import { AuthModal } from "../components/auth-modal";
+import { PublicProfileModal } from "../components/public-profile-modal";
 import { Loader2, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function Home() {
@@ -30,6 +31,19 @@ export default function Home() {
   
   const [manageOpen, setManageOpen] = useState(false);
   const [manageTab, setManageTab] = useState<"projects" | "add" | "profile">("projects");
+
+  // Public Profile Modal State
+  const [profileModalData, setProfileModalData] = useState<{
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+  } | null>(null);
+
+  const openProfileModal = (email: string, name: string, avatarUrl: string | null) => {
+    setProfileModalData({ email, name, avatarUrl });
+  };
+
+  const closeProfileModal = () => setProfileModalData(null);
 
   // Fetch projects on load
   const loadProjects = async () => {
@@ -60,6 +74,18 @@ export default function Home() {
       setAuthOpen(false);
     }
   }, [user, authOpen]);
+
+  // Listen to Escape key to clear search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSearchTerm("");
+        setSelectedCategory("");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   if (authLoading) {
     return (
@@ -95,6 +121,22 @@ export default function Home() {
     setManageOpen(true);
   };
 
+  const getFeaturedAuthorName = () => {
+    if (!projects[0]) return "Shivraj";
+    if (user && projects[0].user_id === user.user_id) {
+      return user.name || "Shivraj";
+    }
+    return projects[0].user?.name || "Shivraj";
+  };
+
+  const getFeaturedAuthorAvatar = () => {
+    if (!projects[0]) return null;
+    if (user && projects[0].user_id === user.user_id) {
+      return user.avatar_url || null;
+    }
+    return projects[0].user?.avatar_url || null;
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white text-brand-black selection:bg-brand-rose selection:text-white">
       <Header
@@ -106,8 +148,110 @@ export default function Home() {
         projects={projects}
       />
 
-      {/* Brutalist Hero Banner Section (Reduced padding) */}
-      <section className="relative py-8 px-4 md:py-12 md:px-8 bg-zinc-50 border-b-4 border-brand-black">
+      {/* Hero Banner wrapper with Search Overlay */}
+      <div className="relative">
+        {/* Overlay search results panel */}
+        {(searchTerm || selectedCategory) && (
+          <div className="absolute inset-0 z-30 bg-white/95 backdrop-blur-xs border-b-4 border-brand-black flex flex-col overflow-y-auto animate-slide-in">
+            <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col h-full justify-between">
+              <div className="space-y-6">
+                
+                {/* Header of Search Modal */}
+                <div className="flex items-center justify-between border-b-2 border-brand-black pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-rose opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-rose border border-brand-black"></span>
+                    </span>
+                    <h2 className="text-sm font-black uppercase tracking-wider text-brand-black">
+                      Search Index // Matches for:{" "}
+                      <span className="text-brand-rose">
+                        {searchTerm ? `"${searchTerm}"` : ""}
+                        {searchTerm && selectedCategory ? " + " : ""}
+                        {selectedCategory ? `[${selectedCategory}]` : ""}
+                      </span>
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                    }}
+                    className="p-1 border-2 border-transparent hover:border-brand-black text-brand-rose font-black text-xs uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    Close Search [x]
+                  </button>
+                </div>
+
+                {/* Match count and active filters */}
+                <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex gap-2">
+                    {searchTerm && (
+                      <span className="px-2.5 py-1 bg-zinc-100 border border-brand-black font-semibold flex items-center gap-1.5 uppercase text-[10px]">
+                        Query: {searchTerm}
+                        <button onClick={() => setSearchTerm("")} className="text-brand-rose font-black hover:underline cursor-pointer">×</button>
+                      </span>
+                    )}
+                    {selectedCategory && (
+                      <span className="px-2.5 py-1 bg-zinc-100 border border-brand-black font-semibold flex items-center gap-1.5 uppercase text-[10px]">
+                        Category: {selectedCategory}
+                        <button onClick={() => setSelectedCategory("")} className="text-brand-rose font-black hover:underline cursor-pointer">×</button>
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-bold text-zinc-500 uppercase text-[10px]">
+                    {filteredProjects.length} matches indexed
+                  </span>
+                </div>
+
+                {/* Related Search List */}
+                {filteredProjects.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {filteredProjects.map((proj) => (
+                      <div
+                        key={proj.project_id}
+                        onClick={() => setSelectedProject(proj)}
+                        className="group bg-white border-2 border-brand-black p-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] transition-all cursor-pointer flex flex-col justify-between h-40"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="px-2 py-0.5 bg-brand-pink/35 border border-brand-black text-[9px] font-black uppercase tracking-wider text-brand-rose">
+                              {proj.category}
+                            </span>
+                            <span className="text-[8px] font-mono text-zinc-400 uppercase">
+                              {new Date(proj.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-black uppercase tracking-tight text-brand-black group-hover:text-brand-rose transition-colors truncate">
+                            {proj.title}
+                          </h3>
+                          <p className="text-[10px] text-zinc-700 font-semibold leading-relaxed line-clamp-3">
+                            {proj.description}
+                          </p>
+                        </div>
+                        <div className="text-[9px] font-black uppercase tracking-wider text-brand-rose flex items-center gap-1.5 pt-2 border-t border-zinc-100 group-hover:gap-2 transition-all">
+                          Inspect details <ArrowRight size={10} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-zinc-50 border-2 border-brand-black border-dashed p-12 text-center text-xs font-black uppercase tracking-widest text-zinc-500">
+                    No matching registry records found.
+                  </div>
+                )}
+
+              </div>
+              
+              <div className="text-[9px] text-zinc-400 font-mono uppercase tracking-widest pt-6 border-t border-zinc-100 text-left">
+                Lattice Search Engine // Press esc or click close to return to index
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        <section className="relative py-8 px-4 md:py-12 md:px-8 bg-zinc-50 border-b-4 border-brand-black">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Column - Copy & Actions */}
@@ -187,7 +331,10 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-2.5">
-                  <h3 className="text-xl font-black uppercase tracking-tight text-brand-black group-hover:text-brand-rose transition-colors truncate">
+                  <h3
+                    onClick={() => projects[0] && setSelectedProject(projects[0])}
+                    className="text-xl font-black uppercase tracking-tight text-brand-black hover:text-brand-rose transition-colors truncate cursor-pointer"
+                  >
                     {projects[0] ? projects[0].title : "Lattice Portal Core"}
                   </h3>
                   <p className="text-xs text-brand-black font-semibold leading-relaxed line-clamp-3">
@@ -200,15 +347,27 @@ export default function Home() {
               <div className="border-2 border-brand-black p-4 space-y-2.5 font-mono text-[10px] text-brand-black bg-zinc-50 rounded-none overflow-hidden">
                 <div className="flex justify-between items-center gap-2 overflow-hidden">
                   <span className="shrink-0">PROJECT NAME:</span>
-                  <span className="font-bold truncate text-right uppercase">
+                  <button
+                    onClick={() => projects[0] && setSelectedProject(projects[0])}
+                    className="font-bold truncate text-right uppercase text-brand-black hover:text-brand-rose hover:underline cursor-pointer border-none bg-transparent p-0 font-mono text-[10px]"
+                  >
                     {projects[0] ? projects[0].title : "LATTICE PORTAL CORE"}
-                  </span>
+                  </button>
                 </div>
                 <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
                   <span>REPOSITORY:</span>
-                  <span className="font-bold truncate text-right uppercase">
-                    {projects[0] ? projects[0].github_link.replace("https://", "").replace("http://", "") : "GITHUB.COM/SHIVRAJ/LATTICE"}
-                  </span>
+                  {projects[0] ? (
+                    <a
+                      href={projects[0].github_link.startsWith("http") ? projects[0].github_link : `https://${projects[0].github_link}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold truncate text-right uppercase text-brand-black hover:text-brand-rose hover:underline cursor-pointer"
+                    >
+                      {projects[0].github_link.replace("https://", "").replace("http://", "")}
+                    </a>
+                  ) : (
+                    <span className="font-bold truncate text-right uppercase">GITHUB.COM/SHIVRAJ/LATTICE</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
                   <span>CATEGORY:</span>
@@ -224,37 +383,46 @@ export default function Home() {
                 </div>
                 <div className="flex justify-between items-center gap-2 overflow-hidden border-t border-brand-black pt-1.5">
                   <span>DEMO LINK:</span>
-                  <span className="font-bold text-brand-rose truncate text-right uppercase">
-                    {projects[0] ? projects[0].live_demo_link.replace("https://", "").replace("http://", "") : "LATTICE-DEMO.VERCEL.APP"}
-                  </span>
+                  {projects[0] ? (
+                    <a
+                      href={projects[0].live_demo_link.startsWith("http") ? projects[0].live_demo_link : `https://${projects[0].live_demo_link}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-brand-rose truncate text-right uppercase hover:underline cursor-pointer"
+                    >
+                      {projects[0].live_demo_link.replace("https://", "").replace("http://", "")}
+                    </a>
+                  ) : (
+                    <span className="font-bold text-brand-rose truncate text-right uppercase">LATTICE-DEMO.VERCEL.APP</span>
+                  )}
                 </div>
               </div>
 
               {/* Author footer */}
               <div className="flex items-center justify-between border-t-2 border-brand-black pt-4">
                 <div className="flex items-center gap-2">
-                  {projects[0]?.user?.avatar_url ? (
+                  {getFeaturedAuthorAvatar() ? (
                     <img
-                      src={projects[0].user.avatar_url}
-                      alt={projects[0].user.name}
+                      src={getFeaturedAuthorAvatar()!}
+                      alt={getFeaturedAuthorName()}
                       className="w-6 h-6 object-cover border-2 border-brand-black"
                     />
                   ) : (
                     <div className="w-6 h-6 bg-brand-black border-2 border-brand-black flex items-center justify-center text-[10px] font-black uppercase text-white">
-                      {projects[0] ? projects[0].user?.name.charAt(0).toUpperCase() : "S"}
+                      {getFeaturedAuthorName().charAt(0).toUpperCase()}
                     </div>
                   )}
                   <span className="text-xs font-black uppercase tracking-wider text-brand-black truncate max-w-[150px]">
-                    {projects[0] ? projects[0].user?.name : "Shivraj"}
+                    {getFeaturedAuthorName()}
                   </span>
                 </div>
                 <span className="text-[9px] font-black uppercase tracking-wider text-brand-black">Author</span>
               </div>
             </div>
           </div>
-
         </div>
       </section>
+    </div>
 
       {/* Main Grid / Explore Showcase */}
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1">
@@ -340,7 +508,21 @@ export default function Home() {
       <ProjectDetailModal
         project={selectedProject}
         onClose={() => setSelectedProject(null)}
+        onViewProfile={openProfileModal}
       />
+
+      {profileModalData && (
+        <PublicProfileModal
+          email={profileModalData.email}
+          name={profileModalData.name}
+          avatarUrl={profileModalData.avatarUrl}
+          onClose={closeProfileModal}
+          onViewProject={(proj) => {
+            closeProfileModal();
+            setSelectedProject(proj);
+          }}
+        />
+      )}
 
       <ProjectManageModal
         isOpen={manageOpen}

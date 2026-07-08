@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { Project } from "../lib/api";
-import { X, ExternalLink, User, Calendar } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { api, Project, PublicProfile } from "../lib/api";
+import { X, ExternalLink, Calendar, ChevronRight } from "lucide-react";
 
 const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg
@@ -22,9 +22,32 @@ const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 interface ProjectDetailModalProps {
   project: Project | null;
   onClose: () => void;
+  onViewProfile?: (email: string, name: string, avatarUrl: string | null) => void;
 }
 
-export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, onClose }) => {
+export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
+  project,
+  onClose,
+  onViewProfile,
+}) => {
+  const [ownerProfile, setOwnerProfile] = useState<PublicProfile | null>(null);
+
+  // Whenever the project changes, fetch the owner's public profile to get the real avatar
+  useEffect(() => {
+    setOwnerProfile(null);
+    if (!project) return;
+
+    const email = project.user?.email || "shivrajmaharaul688@gmail.com";
+    api
+      .getPublicProfile(email)
+      .then((res) => {
+        if (res.data) setOwnerProfile(res.data);
+      })
+      .catch(() => {
+        // silently fail — fall back to project.user fields
+      });
+  }, [project?.project_id]);
+
   if (!project) return null;
 
   const formattedDate = new Date(project.created_at).toLocaleDateString(undefined, {
@@ -33,10 +56,19 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
     day: "numeric",
   });
 
+  // Resolved owner info: prefer freshly-fetched profile, then project.user fields, then hardcoded fallback
+  const ownerName = ownerProfile?.name || project.user?.name || "Shivraj";
+  const ownerEmail = ownerProfile?.email || project.user?.email || "shivrajmaharaul688@gmail.com";
+  const ownerAvatar = ownerProfile?.avatar || project.user?.avatar_url || null;
+
+  const handleViewProfile = () => {
+    onViewProfile?.(ownerEmail, ownerName, ownerAvatar);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 transition-all duration-300">
       <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white border-2 border-brand-black rounded-none shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex flex-col scrollbar-thin">
-        
+
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b-2 border-brand-black sticky top-0 bg-white z-10">
           <span className="px-3 py-1 bg-brand-black text-white text-xs font-black uppercase tracking-wider border-2 border-brand-black rounded-none">
@@ -52,6 +84,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
 
         {/* Modal Body */}
         <div className="p-6 md:p-8 space-y-6 bg-white">
+
           {/* Main Cover Image */}
           <div className="relative aspect-[16/9] w-full overflow-hidden border-2 border-brand-black rounded-none bg-zinc-50">
             <img
@@ -61,58 +94,66 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
             />
           </div>
 
-          {/* Project Info Block */}
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pt-2">
-            <div className="space-y-4 max-w-xl">
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-brand-black">
-                {project.title}
-              </h2>
-              
-              {/* Author Row */}
-              <div className="flex items-center gap-3">
-                {project.user?.avatar_url ? (
-                  <img
-                    src={project.user.avatar_url}
-                    alt={project.user.name}
-                    className="w-10 h-10 object-cover border-2 border-brand-black"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-brand-white border-2 border-brand-black flex items-center justify-center">
-                    <User size={18} className="text-brand-black" />
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs font-black uppercase text-brand-black">{project.user?.name || "Developer"}</p>
-                  <p className="text-xs text-brand-black font-semibold">{project.user?.email || "No email provided"}</p>
+          {/* Title */}
+          <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-brand-black">
+            {project.title}
+          </h2>
+
+          {/* Author Row — avatar+info on left, View Profile button on right */}
+          <div className="flex items-center justify-between gap-4 border-2 border-brand-black p-3 bg-zinc-50">
+            {/* Left: avatar + name + email */}
+            <div className="flex items-center gap-3 min-w-0">
+              {ownerAvatar ? (
+                <img
+                  src={ownerAvatar}
+                  alt={ownerName}
+                  className="w-10 h-10 object-cover border-2 border-brand-black rounded-none flex-shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-brand-rose border-2 border-brand-black flex items-center justify-center text-sm font-black text-white uppercase flex-shrink-0">
+                  {ownerName.charAt(0).toUpperCase()}
                 </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase text-brand-black truncate">{ownerName}</p>
+                <p className="text-xs text-brand-black font-semibold truncate">{ownerEmail}</p>
               </div>
             </div>
 
-            {/* Links Block */}
-            <div className="flex items-center gap-3 flex-wrap">
-              {project.github_link && (
-                <a
-                  href={project.github_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="awwwards-btn-secondary px-5 py-3 rounded-none text-xs flex items-center gap-1.5"
-                >
-                  <GithubIcon className="text-brand-black" />
-                  <span>Repository</span>
-                </a>
-              )}
-              {project.live_demo_link && (
-                <a
-                  href={project.live_demo_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="awwwards-btn-primary px-5 py-3 rounded-none text-xs flex items-center gap-1.5"
-                >
-                  <ExternalLink size={15} />
-                  <span>Live Project</span>
-                </a>
-              )}
-            </div>
+            {/* Right: View Profile button */}
+            <button
+              onClick={handleViewProfile}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 border-2 border-brand-black bg-white hover:bg-brand-black hover:text-white text-brand-black text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] hover:shadow-none"
+            >
+              <span>View Profile</span>
+              <ChevronRight size={12} className="stroke-[2.5]" />
+            </button>
+          </div>
+
+          {/* Links Block */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {project.github_link && (
+              <a
+                href={project.github_link.startsWith("http") ? project.github_link : `https://${project.github_link}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="awwwards-btn-secondary px-5 py-3 rounded-none text-xs flex items-center gap-1.5"
+              >
+                <GithubIcon className="text-brand-black" />
+                <span>Repository</span>
+              </a>
+            )}
+            {project.live_demo_link && (
+              <a
+                href={project.live_demo_link.startsWith("http") ? project.live_demo_link : `https://${project.live_demo_link}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="awwwards-btn-primary px-5 py-3 rounded-none text-xs flex items-center gap-1.5"
+              >
+                <ExternalLink size={15} />
+                <span>Live Project</span>
+              </a>
+            )}
           </div>
 
           <hr className="border-t-2 border-brand-black" />

@@ -13,7 +13,8 @@ export interface User {
 export interface PublicProfile {
   name: string;
   email: string;
-  avatar_url: string;
+  avatar: string;       // key returned by GET /api/v1/auth/publicProfile
+  avatar_url?: string;  // key returned when embedded inside project.user
 }
 
 export interface Project {
