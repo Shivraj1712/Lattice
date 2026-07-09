@@ -606,38 +606,6 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
             {activeTab === "projects" && editingProject && (
               <div className="space-y-6 max-w-lg">
 
-                {/* --- Cover Image (independent section) --- */}
-                <div className="bg-white border-2 border-brand-black rounded-none p-5 space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-wider text-brand-black border-b-2 border-zinc-100 pb-2">
-                    Cover Image
-                  </h4>
-                  {editingProject.image_url && (
-                    <img
-                      src={editingProject.image_url}
-                      alt="Current cover"
-                      className="w-full h-28 object-cover border border-zinc-200"
-                    />
-                  )}
-                  <button
-                    type="button"
-                    disabled={projectImageLoading || projectDetailsLoading}
-                    onClick={() => projectImageEditRef.current?.click()}
-                    className="w-full py-2 sm:py-2.5 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-pink/50 hover:bg-zinc-100 rounded-none text-xs font-bold text-brand-black flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {projectImageLoading ? (
-                      <><Loader2 size={13} className="animate-spin" /><span>Uploading Image...</span></>
-                    ) : (
-                      <><ImageIcon size={13} className="hidden sm:inline" /><span>Change Cover Image</span></>
-                    )}
-                  </button>
-                  <input
-                    type="file"
-                    ref={projectImageEditRef}
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleUploadProjectImage}
-                  />
-                </div>
 
                 {/* --- Project Details Form (independent) --- */}
                 <form onSubmit={handleSaveProjectDetails} className="space-y-4">
