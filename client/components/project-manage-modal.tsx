@@ -52,7 +52,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   const { user, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"projects" | "add" | "profile">(initialTab);
   const toast = useToast();
-  
+
   // Local lists
   const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
@@ -80,7 +80,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const requestConfirm = (title: string, message: string, onConfirm: () => void) => {
@@ -116,7 +116,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   const [profileName, setProfileName] = useState(user?.name || "");
   const [profilePassword, setProfilePassword] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const projectImageEditRef = useRef<HTMLInputElement>(null);
@@ -214,7 +214,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       setLiveDemoLink("");
       setImageFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      
+
       // Reload projects list and switch to list tab
       await fetchMyProjects();
       if (onProjectsChanged) onProjectsChanged();
@@ -411,7 +411,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-brand-black/60 transition-all duration-300 overflow-y-auto">
       <div className="relative w-full sm:max-w-4xl my-auto h-[92dvh] sm:h-[85vh] max-h-[calc(100vh-2rem)] bg-white border-0 sm:border-2 sm:border-t-2 border-brand-black rounded-t-none sm:rounded-none shadow-[0_-4px_0_0_rgba(24,22,22,1)] sm:shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex flex-col md:flex-row overflow-hidden animate-modal-in">
-        
+
         {/* Sidebar / bottom tabs on mobile */}
         <div className="flex md:flex-col w-full md:w-64 bg-zinc-50 border-b-2 md:border-b-0 md:border-r-2 border-brand-black md:justify-between p-3 md:p-6 overflow-x-auto flex-shrink-0">
           <div className="flex md:flex-col gap-1.5 md:gap-6 min-w-max md:min-w-0 items-center md:items-start">
@@ -442,11 +442,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                   setEditingProject(null);
                   resetStatus();
                 }}
-                className={`flex items-center gap-2 md:gap-3 w-full px-2.5 py-2 md:px-4 md:py-3 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-transparent transition-all cursor-pointer rounded-none ${
-                  activeTab === "projects"
+                className={`flex items-center gap-2 md:gap-3 w-full px-2.5 py-2 md:px-4 md:py-3 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-transparent transition-all cursor-pointer rounded-none ${activeTab === "projects"
                     ? "bg-brand-black text-white border-brand-black shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                     : "text-zinc-600 hover:text-brand-black hover:bg-zinc-100"
-                }`}
+                  }`}
               >
                 <FolderKanban size={15} className="hidden sm:inline-block" />
                 <span>My Projects</span>
@@ -457,11 +456,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                   setActiveTab("add");
                   resetStatus();
                 }}
-                className={`flex items-center gap-2 md:gap-3 w-full px-2.5 py-2 md:px-4 md:py-3 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-transparent transition-all cursor-pointer rounded-none ${
-                  activeTab === "add"
+                className={`flex items-center gap-2 md:gap-3 w-full px-2.5 py-2 md:px-4 md:py-3 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-transparent transition-all cursor-pointer rounded-none ${activeTab === "add"
                     ? "bg-brand-black text-white border-brand-black shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                     : "text-zinc-600 hover:text-brand-black hover:bg-zinc-100"
-                }`}
+                  }`}
               >
                 <Plus size={15} className="hidden sm:inline-block" />
                 <span>Add Project</span>
@@ -472,11 +470,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                   setActiveTab("profile");
                   resetStatus();
                 }}
-                className={`flex items-center gap-2 md:gap-3 w-full px-2.5 py-2 md:px-4 md:py-3 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-transparent transition-all cursor-pointer rounded-none ${
-                  activeTab === "profile"
+                className={`flex items-center gap-2 md:gap-3 w-full px-2.5 py-2 md:px-4 md:py-3 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-transparent transition-all cursor-pointer rounded-none ${activeTab === "profile"
                     ? "bg-brand-black text-white border-brand-black shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                     : "text-zinc-600 hover:text-brand-black hover:bg-zinc-100"
-                }`}
+                  }`}
               >
                 <Settings size={15} className="hidden sm:inline-block" />
                 <span>Settings</span>
@@ -514,7 +511,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
           {/* Tab Content */}
           <div className="p-4 sm:p-6 flex-1">
-            
+
             {/* TABS 1: MY PROJECTS LIST */}
             {activeTab === "projects" && !editingProject && (
               <div className="space-y-4">
@@ -858,7 +855,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
             {/* TAB 3: ACCOUNT & PROFILE SETTINGS */}
             {activeTab === "profile" && (
               <div className="space-y-6 sm:space-y-8 max-w-lg">
-                
+
                 {/* Profile Details Card */}
                 <div className="bg-white border-2 border-brand-black rounded-none p-4 sm:p-6 space-y-4">
                   <h4 className="text-xs font-black uppercase tracking-wider text-brand-black border-b-2 border-zinc-100 pb-3">

@@ -579,9 +579,8 @@ export default function Home() {
         onClose={() => {
           setManageOpen(false);
         }}
-        onProjectsChanged={async () => {
-          await loadProjects();
-          await refreshUser();
+        onProjectsChanged={() => {
+          window.location.reload();
         }}
         initialTab={manageTab}
       />

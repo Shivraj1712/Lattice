@@ -262,9 +262,8 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
         onClose={() => {
           setManageOpen(false);
         }}
-        onProjectsChanged={async () => {
-          await fetchProfileAndProjects();
-          await refreshUser();
+        onProjectsChanged={() => {
+          window.location.reload();
         }}
         initialTab={manageTab}
       />
