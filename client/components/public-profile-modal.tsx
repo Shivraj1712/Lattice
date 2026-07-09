@@ -23,6 +23,7 @@ interface PublicProfileModalProps {
   email: string | null;
   name: string;
   avatarUrl: string | null;
+  userId?: string;
   onClose: () => void;
   onViewProject?: (project: Project) => void;
 }
@@ -31,6 +32,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
   email,
   name,
   avatarUrl,
+  userId,
   onClose,
   onViewProject,
 }) => {
@@ -40,22 +42,36 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
-    if (!email) return;
     setLoading(true);
     setError(null);
     try {
-      const [profileRes, projectsRes] = await Promise.all([
-        api.getPublicProfile(email),
-        api.getProjectsByUserEmail(email),
-      ]);
-      if (profileRes.data) setProfile(profileRes.data);
-      if (projectsRes.data) setProjects(projectsRes.data);
+      if (email) {
+        const [profileRes, projectsRes] = await Promise.all([
+          api.getPublicProfile(email),
+          api.getProjectsByUserEmail(email),
+        ]);
+        if (profileRes.data) setProfile(profileRes.data);
+        if (projectsRes.data) setProjects(projectsRes.data);
+      } else {
+        setProfile({
+          name: name || "Developer",
+          email: "",
+          avatar: avatarUrl || ""
+        });
+        if (userId) {
+          const projectsRes = await api.getAllProjects();
+          if (projectsRes.success && projectsRes.data) {
+            const filtered = projectsRes.data.filter((proj) => proj.user_id === userId);
+            setProjects(filtered);
+          }
+        }
+      }
     } catch {
       setError("Could not load profile. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [email]);
+  }, [email, name, avatarUrl, userId]);
 
   useEffect(() => {
     loadProfile();
@@ -71,7 +87,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
 
   const displayName = profile?.name || name || (email ?? "Unknown");
   const displayEmail = profile?.email || email || "";
-  const displayAvatar = profile?.avatar || avatarUrl || null;
+  const displayAvatar = profile?.avatar_url || profile?.avatar || avatarUrl || null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-black/70 backdrop-blur-sm overflow-y-auto">
@@ -82,7 +98,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
           <div className="flex items-center gap-2">
             <User size={14} className="text-brand-black stroke-[2.5]" />
             <span className="text-[10px] font-black uppercase tracking-widest text-brand-black">
-              Public Profile - Read Only
+              Public Profile
             </span>
           </div>
           <button
@@ -147,12 +163,6 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
                 </div>
               </div>
 
-              {/* Read-only notice */}
-              <div className="flex items-center gap-2 border-l-4 border-brand-rose pl-3 py-1 bg-rose-50">
-                <span className="text-[9px] font-black uppercase tracking-widest text-brand-rose">
-                  View only — you cannot edit another user&apos;s profile or projects
-                </span>
-              </div>
 
               {/* Projects list */}
               <div className="space-y-3">

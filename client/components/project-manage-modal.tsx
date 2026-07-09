@@ -227,15 +227,16 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     setEditLiveDemoLink(proj.live_demo_link);
   };
 
-  // Save Project Details Edit (via modal)
+  // Save Project Details Edit (via modal or inline form)
   const handleSaveProjectDetails = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!projectDetailsModal) return;
+    const targetProject = projectDetailsModal || editingProject;
+    if (!targetProject) return;
     resetStatus();
     setProjectDetailsLoading(true);
 
     try {
-      await api.updateProjectDetails(projectDetailsModal.project_id, {
+      await api.updateProjectDetails(targetProject.project_id, {
         title: editTitle,
         description: editDescription,
         category: editCategory,
@@ -256,7 +257,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
   // Upload Project Cover Image (via modal)
   const handleUploadProjectImage = async (e: React.ChangeEvent<HTMLInputElement>, proj?: Project) => {
-    const target = proj || projectImageModal;
+    const target = proj || projectImageModal || editingProject;
     if (!target || !e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     resetStatus();
@@ -373,14 +374,25 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         
         {/* Sidebar / bottom tabs on mobile */}
         <div className="flex md:flex-col w-full md:w-64 bg-zinc-50 border-b-2 md:border-b-0 md:border-r-2 border-brand-black md:justify-between p-3 md:p-6 overflow-x-auto flex-shrink-0">
-          <div className="flex md:flex-col gap-1.5 md:gap-6 min-w-max md:min-w-0">
-            <div>
-              <h2 className="text-xl font-black uppercase text-brand-black tracking-tight">
-                Dashboard
-              </h2>
-              <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-black mt-1">
-                Lattice Studio
-              </p>
+          <div className="flex md:flex-col gap-1.5 md:gap-6 min-w-max md:min-w-0 items-center md:items-start">
+            <div className="flex items-center md:block flex-shrink-0">
+              {/* Logo on mobile/tablet view */}
+              <div className="block md:hidden mr-1">
+                <img
+                  src="/icon.png"
+                  alt="Lattice Logo"
+                  className="h-8 w-8 object-contain border-2 border-brand-black"
+                />
+              </div>
+              {/* Text on desktop view */}
+              <div className="hidden md:block">
+                <h2 className="text-xl font-black uppercase text-brand-black tracking-tight">
+                  Dashboard
+                </h2>
+                <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-black mt-1">
+                  Lattice Studio
+                </p>
+              </div>
             </div>
 
             <nav className="flex md:flex-col gap-1 md:space-y-2">
@@ -396,7 +408,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     : "text-zinc-600 hover:text-brand-black hover:bg-zinc-100"
                 }`}
               >
-                <FolderKanban size={15} />
+                <FolderKanban size={15} className="hidden sm:inline-block" />
                 <span>My Projects</span>
               </button>
 
@@ -411,7 +423,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     : "text-zinc-600 hover:text-brand-black hover:bg-zinc-100"
                 }`}
               >
-                <Plus size={15} />
+                <Plus size={15} className="hidden sm:inline-block" />
                 <span>Add Project</span>
               </button>
 
@@ -426,7 +438,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     : "text-zinc-600 hover:text-brand-black hover:bg-zinc-100"
                 }`}
               >
-                <Settings size={15} />
+                <Settings size={15} className="hidden sm:inline-block" />
                 <span>Settings</span>
               </button>
             </nav>
@@ -444,7 +456,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-white">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b-2 border-brand-black bg-zinc-50 sticky top-0 z-10">
-            <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
               {activeTab === "projects" && (editingProject ? "Edit Project Details" : "Project Directory")}
               {activeTab === "add" && "Submit Project"}
               {activeTab === "profile" && "Lattice Identity Manager"}
@@ -461,7 +473,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
           {/* Messages (handled via floating toasts now) */}
 
           {/* Tab Content */}
-          <div className="p-6 flex-1">
+          <div className="p-4 sm:p-6 flex-1">
             
             {/* TABS 1: MY PROJECTS LIST */}
             {activeTab === "projects" && !editingProject && (
@@ -500,7 +512,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                           />
                           <div className="absolute inset-0 bg-brand-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                             <button
-                              onClick={() => openProjectDetailsModal(proj)}
+                              onClick={() => startEditProject(proj)}
                               className="p-2.5 bg-white border-2 border-brand-black hover:bg-brand-rose hover:text-white rounded-none text-brand-black transition-colors shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] cursor-pointer"
                               title="Edit Details"
                             >
@@ -573,12 +585,12 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     type="button"
                     disabled={projectImageLoading || projectDetailsLoading}
                     onClick={() => projectImageEditRef.current?.click()}
-                    className="w-full py-2.5 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-pink/50 hover:bg-zinc-100 rounded-none text-xs font-bold text-brand-black flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-2 sm:py-2.5 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-pink/50 hover:bg-zinc-100 rounded-none text-xs font-bold text-brand-black flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {projectImageLoading ? (
                       <><Loader2 size={13} className="animate-spin" /><span>Uploading Image...</span></>
                     ) : (
-                      <><ImageIcon size={13} /><span>Change Cover Image</span></>
+                      <><ImageIcon size={13} className="hidden sm:inline" /><span>Change Cover Image</span></>
                     )}
                   </button>
                   <input
@@ -625,7 +637,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     <select
                       value={editCategory}
                       onChange={(e) => setEditCategory(e.target.value)}
-                      className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold cursor-pointer"
+                      className="w-full px-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold cursor-pointer"
                     >
                       {CATEGORIES.map((cat) => (
                         <option key={cat} value={cat} className="bg-white text-brand-black">
@@ -646,7 +658,6 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                         onChange={(e) => setEditGithubLink(e.target.value)}
                         className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
                         placeholder="https://github.com/username/project"
-                        required
                       />
                     </div>
                     <div>
@@ -659,7 +670,6 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                         onChange={(e) => setEditLiveDemoLink(e.target.value)}
                         className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
                         placeholder="https://myproject.vercel.app"
-                        required
                       />
                     </div>
                   </div>
@@ -696,7 +706,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     placeholder="E.g. Lattice Sandbox Portal"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
+                    className="w-full px-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold"
                     required
                   />
                 </div>
@@ -710,12 +720,12 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold resize-none"
+                    className="w-full px-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold resize-none"
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
                       Category
@@ -723,7 +733,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold cursor-pointer"
+                      className="w-full px-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold cursor-pointer"
                     >
                       {CATEGORIES.map((cat) => (
                         <option key={cat} value={cat} className="bg-white text-brand-black">
@@ -739,9 +749,9 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full py-3 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-pink/50 hover:bg-zinc-100 rounded-none text-xs text-brand-black font-bold flex items-center justify-center gap-2 cursor-pointer transition-all truncate px-2"
+                      className="w-full py-2 sm:py-3 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-pink/50 hover:bg-zinc-100 rounded-none text-xs text-brand-black font-bold flex items-center justify-center gap-2 cursor-pointer transition-all truncate px-2"
                     >
-                      <ImageIcon size={14} className="text-brand-rose" />
+                      <ImageIcon size={14} className="text-brand-rose hidden sm:inline" />
                       {imageFile ? imageFile.name : "Select Cover Image"}
                     </button>
                     <input
@@ -807,10 +817,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
 
             {/* TAB 3: ACCOUNT & PROFILE SETTINGS */}
             {activeTab === "profile" && (
-              <div className="space-y-8 max-w-lg">
+              <div className="space-y-6 sm:space-y-8 max-w-lg">
                 
                 {/* Profile Details Card */}
-                <div className="bg-white border-2 border-brand-black rounded-none p-6 space-y-4">
+                <div className="bg-white border-2 border-brand-black rounded-none p-4 sm:p-6 space-y-4">
                   <h4 className="text-xs font-black uppercase tracking-wider text-brand-black border-b-2 border-zinc-100 pb-3">
                     Profile Details
                   </h4>
@@ -824,13 +834,13 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                         className="w-16 h-16 object-cover border-2 border-brand-black"
                       />
                     ) : (
-                      <div className="w-16 h-16 bg-brand-pink border-2 border-brand-black flex items-center justify-center text-brand-black text-2xl font-black">
+                      <div className="w-16 h-16 bg-brand-pink border-2 border-brand-black flex items-center justify-center text-brand-black text-2xl font-black flex-shrink-0">
                         {user?.name.charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <div className="space-y-1">
-                      <p className="text-sm font-black uppercase text-brand-black">{user?.name}</p>
-                      <p className="text-[10px] text-zinc-400 font-semibold">{user?.email}</p>
+                    <div className="space-y-1 min-w-0">
+                      <p className="text-sm font-black uppercase text-brand-black truncate">{user?.name}</p>
+                      <p className="text-[10px] text-zinc-400 font-semibold truncate">{user?.email}</p>
                     </div>
                   </div>
 
@@ -840,7 +850,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                       onClick={() => setAvatarModalOpen(true)}
                       className="awwwards-btn-secondary flex items-center justify-center gap-2 px-3 py-2 sm:px-5 sm:py-2.5 rounded-none text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                     >
-                      <ImageIcon size={13} />
+                      <ImageIcon size={13} className="hidden sm:inline-block" />
                       <span>Update Avatar</span>
                     </button>
                     <button
@@ -848,14 +858,14 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                       onClick={() => setProfileDetailsModalOpen(true)}
                       className="awwwards-btn-primary flex items-center justify-center gap-2 px-3 py-2 sm:px-5 sm:py-2.5 rounded-none text-xs font-black uppercase"
                     >
-                      <Edit2 size={13} />
+                      <Edit2 size={13} className="hidden sm:inline-block" />
                       <span>Edit Profile Details</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Danger Zone */}
-                <div className="bg-brand-rose/[0.03] border-2 border-brand-rose rounded-none p-6 space-y-4">
+                <div className="bg-brand-rose/[0.03] border-2 border-brand-rose rounded-none p-4 sm:p-6 space-y-4">
                   <div className="flex items-center gap-2 text-brand-rose">
                     <ShieldAlert size={18} />
                     <h4 className="text-xs font-black uppercase tracking-wider">Danger Zone</h4>
@@ -867,7 +877,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     type="button"
                     onClick={handleDeleteAccount}
                     disabled={deleteAccountLoading || profileLoading || avatarLoading}
-                    className="awwwards-btn-primary flex items-center gap-2 py-2 px-3 sm:py-2.5 sm:px-5 bg-brand-rose border-brand-rose hover:bg-brand-rose/90 rounded-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="awwwards-btn-primary flex items-center gap-2 py-2 px-3 sm:py-2.5 sm:px-5 bg-brand-rose border-brand-rose hover:bg-brand-rose/90 rounded-none text-xs disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                   >
                     {deleteAccountLoading && <Loader2 size={12} className="animate-spin" />}
                     <span>Delete My Account</span>
@@ -887,8 +897,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white border-4 border-brand-black w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none space-y-5 p-6 animate-slide-in my-auto">
             <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3">
-              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
-                <ImageIcon size={15} /> Update Cover Image
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <ImageIcon size={15} className="hidden sm:inline" /> Update Cover Image
               </h3>
               <button onClick={() => setProjectImageModal(null)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
                 <X size={18} />
@@ -935,8 +945,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white border-4 border-brand-black w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none p-4 sm:p-6 animate-slide-in my-auto">
             <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3 mb-3 sm:mb-5">
-              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
-                <Edit2 size={15} /> Edit Project Details
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <Edit2 size={15} className="hidden sm:inline" /> Edit Project Details
               </h3>
               <button onClick={() => setProjectDetailsModal(null)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
                 <X size={18} />
@@ -960,11 +970,11 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1">GitHub URL</label>
-                  <input type="url" value={editGithubLink} onChange={(e) => setEditGithubLink(e.target.value)} className="w-full px-3 py-2 sm:py-2.5 awwwards-input rounded-none text-xs font-semibold" placeholder="https://github.com/..." required />
+                  <input type="url" value={editGithubLink} onChange={(e) => setEditGithubLink(e.target.value)} className="w-full px-3 py-2 sm:py-2.5 awwwards-input rounded-none text-xs font-semibold" placeholder="https://github.com/..." />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1">Live Demo URL</label>
-                  <input type="url" value={editLiveDemoLink} onChange={(e) => setEditLiveDemoLink(e.target.value)} className="w-full px-3 py-2 sm:py-2.5 awwwards-input rounded-none text-xs font-semibold" placeholder="https://..." required />
+                  <input type="url" value={editLiveDemoLink} onChange={(e) => setEditLiveDemoLink(e.target.value)} className="w-full px-3 py-2 sm:py-2.5 awwwards-input rounded-none text-xs font-semibold" placeholder="https://..." />
                 </div>
               </div>
               <div className="flex gap-3 pt-1">
@@ -985,8 +995,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white border-4 border-brand-black w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none space-y-5 p-6 animate-slide-in my-auto">
             <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3">
-              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
-                <ImageIcon size={15} /> Update Avatar
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <ImageIcon size={15} className="hidden sm:inline" /> Update Avatar
               </h3>
               <button onClick={() => setAvatarModalOpen(false)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
                 <X size={18} />
@@ -1036,8 +1046,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white border-4 border-brand-black w-full max-w-sm max-h-[calc(100vh-2rem)] overflow-y-auto shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none p-4 sm:p-6 animate-slide-in my-auto">
             <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3 mb-3 sm:mb-5">
-              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
-                <UserIcon size={15} /> Edit Profile Details
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <UserIcon size={15} className="hidden sm:inline" /> Edit Profile Details
               </h3>
               <button onClick={() => setProfileDetailsModalOpen(false)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
                 <X size={18} />
@@ -1073,8 +1083,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white border-4 border-brand-black p-4 sm:p-6 max-w-sm w-full max-h-[calc(100vh-2rem)] overflow-y-auto shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] space-y-4 rounded-none animate-slide-in my-auto">
             <div className="flex items-center gap-2 text-brand-rose">
-              <ShieldAlert size={20} />
-              <h3 className="text-sm font-black uppercase tracking-wider">{confirmConfig.title}</h3>
+              <ShieldAlert size={20} className="hidden sm:inline" />
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider">{confirmConfig.title}</h3>
             </div>
             <p className="text-xs text-zinc-700 font-semibold leading-relaxed">
               {confirmConfig.message}

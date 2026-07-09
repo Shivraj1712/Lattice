@@ -14,7 +14,7 @@ import { PublicProfileModal } from "../components/public-profile-modal";
 import { Loader2, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
   
   // Projects State
@@ -41,10 +41,11 @@ export default function Home() {
     email: string;
     name: string;
     avatarUrl: string | null;
+    userId?: string;
   } | null>(null);
 
-  const openProfileModal = (email: string, name: string, avatarUrl: string | null) => {
-    setProfileModalData({ email, name, avatarUrl });
+  const openProfileModal = (email: string, name: string, avatarUrl: string | null, userId?: string) => {
+    setProfileModalData({ email, name, avatarUrl, userId });
   };
 
   const closeProfileModal = () => setProfileModalData(null);
@@ -564,6 +565,7 @@ export default function Home() {
           email={profileModalData.email}
           name={profileModalData.name}
           avatarUrl={profileModalData.avatarUrl}
+          userId={profileModalData.userId}
           onClose={closeProfileModal}
           onViewProject={(proj) => {
             closeProfileModal();
@@ -577,8 +579,9 @@ export default function Home() {
         onClose={() => {
           setManageOpen(false);
         }}
-        onProjectsChanged={() => {
-          window.location.reload(); // Hard automatic refresh
+        onProjectsChanged={async () => {
+          await loadProjects();
+          await refreshUser();
         }}
         initialTab={manageTab}
       />

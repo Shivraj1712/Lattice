@@ -55,7 +55,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) =>
     userId: initialOwner.userId,
     name: profile?.name || initialOwner.name,
     email: profile?.email || initialOwner.email,
-    avatar: profile?.avatar || initialOwner.avatar,
+    avatar: profile?.avatar_url || profile?.avatar || initialOwner.avatar,
   };
 
   return (

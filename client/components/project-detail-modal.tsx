@@ -25,7 +25,7 @@ const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 interface ProjectDetailModalProps {
   project: Project | null;
   onClose: () => void;
-  onViewProfile?: (email: string, name: string, avatarUrl: string | null) => void;
+  onViewProfile?: (email: string, name: string, avatarUrl: string | null, userId?: string) => void;
 }
 
 export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
@@ -73,12 +73,12 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const ownerAvatar = ownerProfile?.avatar || initialOwner.avatar || null;
 
   const handleViewProfile = () => {
-    const targetUserId = initialOwner.userId || project.user_id;
+    const targetUserId = project.user_id;
     if (targetUserId && ownerEmail) {
       router.push(`/profile/${targetUserId}?email=${encodeURIComponent(ownerEmail)}&name=${encodeURIComponent(ownerName)}`);
       onClose();
     } else {
-      onViewProfile?.(ownerEmail, ownerName, ownerAvatar);
+      onViewProfile?.(ownerEmail, ownerName, ownerAvatar, targetUserId);
     }
   };
 
@@ -147,7 +147,6 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </button>
           </div>
 
-          {/* Links Block */}
           <div className="flex items-center gap-3 flex-wrap">
             {project.github_link && (
               <a
@@ -156,7 +155,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 rel="noopener noreferrer"
                 className="awwwards-btn-secondary px-3 py-2 sm:px-5 sm:py-3 rounded-none text-xs flex items-center gap-1.5"
               >
-                <GithubIcon className="text-brand-black" />
+                <GithubIcon className="text-brand-black hidden sm:inline" />
                 <span>Repository</span>
               </a>
             )}
@@ -167,7 +166,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 rel="noopener noreferrer"
                 className="awwwards-btn-primary px-3 py-2 sm:px-5 sm:py-3 rounded-none text-xs flex items-center gap-1.5"
               >
-                <ExternalLink size={15} />
+                <ExternalLink size={15} className="hidden sm:inline" />
                 <span>Live Project</span>
               </a>
             )}

@@ -26,7 +26,7 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
   const emailQuery = resolvedSearchParams.email;
   const nameQuery = resolvedSearchParams.name;
 
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const toast = useToast();
   const router = useRouter();
 
@@ -51,41 +51,52 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
   const targetEmail = emailQuery || (userId ? USER_ID_TO_EMAIL[userId] : undefined);
 
   const fetchProfileAndProjects = async () => {
-    if (!targetEmail) {
-      setError("No email address provided for this user profile.");
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      // Fetch public profile and user's projects using the APIs
-      const [profileRes, projectsRes] = await Promise.all([
-        api.getPublicProfile(targetEmail),
-        api.getProjectsByUserEmail(targetEmail),
-      ]);
+      if (targetEmail) {
+        // Fetch public profile and user's projects using the APIs
+        const [profileRes, projectsRes] = await Promise.all([
+          api.getPublicProfile(targetEmail),
+          api.getProjectsByUserEmail(targetEmail),
+        ]);
 
-      if (profileRes.success && profileRes.data) {
-        setProfile(profileRes.data);
+        if (profileRes.success && profileRes.data) {
+          setProfile(profileRes.data);
+        } else {
+          // Fallback to query params or basic structured details
+          setProfile({
+            name: nameQuery || targetEmail.split("@")[0],
+            email: targetEmail,
+            avatar: ""
+          });
+        }
+
+        if (projectsRes.success && projectsRes.data) {
+          // Strictly filter projects by this user's user_id or email to guarantee no data merging
+          const filtered = projectsRes.data.filter(
+            (proj) => proj.user_id === userId || proj.user?.email === targetEmail
+          );
+          setUserProjects(filtered);
+        } else {
+          setUserProjects([]);
+        }
       } else {
-        // Fallback to query params or basic structured details
+        // Fallback: no email. Get all projects and filter by user_id
         setProfile({
-          name: nameQuery || targetEmail.split("@")[0],
-          email: targetEmail,
+          name: nameQuery || "Developer",
+          email: "",
           avatar: ""
         });
-      }
 
-      if (projectsRes.success && projectsRes.data) {
-        // Strictly filter projects by this user's user_id or email to guarantee no data merging
-        const filtered = projectsRes.data.filter(
-          (proj) => proj.user_id === userId || proj.user?.email === targetEmail
-        );
-        setUserProjects(filtered);
-      } else {
-        setUserProjects([]);
+        const projectsRes = await api.getAllProjects();
+        if (projectsRes.success && projectsRes.data) {
+          const filtered = projectsRes.data.filter((proj) => proj.user_id === userId);
+          setUserProjects(filtered);
+        } else {
+          setUserProjects([]);
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -121,7 +132,7 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
 
   const displayName = profile?.name || nameQuery || targetEmail?.split("@")[0] || "Unknown";
   const displayEmail = profile?.email || targetEmail || "";
-  const displayAvatar = profile?.avatar || null;
+  const displayAvatar = profile?.avatar_url || profile?.avatar || null;
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -251,8 +262,9 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
         onClose={() => {
           setManageOpen(false);
         }}
-        onProjectsChanged={() => {
-          window.location.reload(); // Hard automatic refresh
+        onProjectsChanged={async () => {
+          await fetchProfileAndProjects();
+          await refreshUser();
         }}
         initialTab={manageTab}
       />
