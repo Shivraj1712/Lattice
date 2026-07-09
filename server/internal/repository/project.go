@@ -123,7 +123,7 @@ func (r *ProjectRepoHandler) DeleteProject(ctx context.Context, project_ID uuid.
 
 func (r *ProjectRepoHandler) GetAllProject(ctx context.Context) ([]domain.Project, error) {
 	var projects []domain.Project
-	err := database.DB.WithContext(ctx).Model(&domain.Project{}).Find(&projects).Error
+	err := database.DB.WithContext(ctx).Model(&domain.Project{}).Preload("ProjectUser").Find(&projects).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return make([]domain.Project, 0), nil
@@ -136,7 +136,7 @@ func (r *ProjectRepoHandler) GetAllProject(ctx context.Context) ([]domain.Projec
 
 func (r *ProjectRepoHandler) GetUserProjectByID(ctx context.Context, user_ID uuid.UUID) ([]domain.Project, error) {
 	var projects []domain.Project
-	err := database.DB.WithContext(ctx).Model(&domain.Project{}).Where("user_id = ?", user_ID).Find(&projects).Error
+	err := database.DB.WithContext(ctx).Model(&domain.Project{}).Where("user_id = ?", user_ID).Preload("ProjectUser").Find(&projects).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return make([]domain.Project, 0), nil
@@ -157,7 +157,7 @@ func (r *ProjectRepoHandler) SearchAndFilter(ctx context.Context, searchTerm str
 	if category != "" {
 		query = query.Where("category = ?", category)
 	}
-	err := query.Find(&projects).Error
+	err := query.Preload("ProjectUser").Find(&projects).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return make([]domain.Project, 0), nil
