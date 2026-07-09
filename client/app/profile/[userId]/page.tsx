@@ -34,7 +34,6 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Search & Filter State (Local to profile page)
@@ -51,19 +50,14 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
   // Determine email to use
   const targetEmail = emailQuery || (userId ? USER_ID_TO_EMAIL[userId] : undefined);
 
-  const fetchProfileAndProjects = async (silent = false) => {
+  const fetchProfileAndProjects = async () => {
     if (!targetEmail) {
       setError("No email address provided for this user profile.");
       setLoading(false);
       return;
     }
 
-    const isInitial = userProjects.length === 0;
-    if (isInitial) {
-      if (!silent) setLoading(true);
-    } else {
-      setIsRefreshing(true);
-    }
+    setLoading(true);
     setError(null);
 
     try {
@@ -98,7 +92,6 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
       setError("Failed to load user profile or projects.");
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
     }
   };
 
@@ -203,26 +196,9 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
             {/* Showcase Section */}
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b-2 border-brand-black pb-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-sm font-black uppercase tracking-wider text-brand-black">
-                    Projects by {displayName}
-                  </h2>
-                  <button
-                    onClick={() => fetchProfileAndProjects(true)}
-                    disabled={isRefreshing}
-                    className="px-2.5 py-1 bg-white hover:bg-brand-black hover:text-white border border-brand-black text-[9px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-1.5"
-                    title="Force Refresh Data"
-                  >
-                    {isRefreshing ? (
-                      <>
-                        <span>Syncing</span>
-                        <Loader2 size={10} className="animate-spin text-brand-rose" />
-                      </>
-                    ) : (
-                      <span>Refresh ⟳</span>
-                    )}
-                  </button>
-                </div>
+                <h2 className="text-sm font-black uppercase tracking-wider text-brand-black">
+                  Projects by {displayName}
+                </h2>
                 {selectedCategory && (
                   <span className="text-xs font-black uppercase tracking-wider text-brand-rose">
                     Category: {selectedCategory}
@@ -237,7 +213,7 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
                   </p>
                 </div>
               ) : (
-                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 transition-opacity duration-300 ${isRefreshing ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                   {filteredProjects.map((proj) => (
                     <ProjectCard
                       key={proj.project_id}
@@ -275,7 +251,7 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
           setManageOpen(false);
         }}
         onProjectsChanged={() => {
-          fetchProfileAndProjects(true); // background silent load
+          window.location.reload(); // Hard automatic refresh
         }}
         initialTab={manageTab}
       />
