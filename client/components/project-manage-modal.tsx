@@ -174,14 +174,34 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       toast.error("Please select a cover image");
       return;
     }
+    // Validation and Normalization
+    if (title.trim().length < 4) {
+      toast.error("Project title must be at least 4 characters");
+      return;
+    }
+    if (description.trim().length < 8) {
+      toast.error("Description must be at least 8 characters");
+      return;
+    }
+
+    let finalGithubLink = githubLink.trim();
+    if (finalGithubLink && !/^https?:\/\//i.test(finalGithubLink)) {
+      finalGithubLink = `https://${finalGithubLink}`;
+    }
+
+    let finalLiveDemoLink = liveDemoLink.trim();
+    if (finalLiveDemoLink && !/^https?:\/\//i.test(finalLiveDemoLink)) {
+      finalLiveDemoLink = `https://${finalLiveDemoLink}`;
+    }
+
     setActionLoading(true);
 
     try {
       await api.createProject({
         title,
         description,
-        github_link: githubLink,
-        live_demo_link: liveDemoLink,
+        github_link: finalGithubLink,
+        live_demo_link: finalLiveDemoLink,
         category,
         image: imageFile,
       });
@@ -233,6 +253,26 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     const targetProject = projectDetailsModal || editingProject;
     if (!targetProject) return;
     resetStatus();
+    // Validation and Normalization
+    if (editTitle.trim().length < 4) {
+      toast.error("Project title must be at least 4 characters");
+      return;
+    }
+    if (editDescription.trim().length < 8) {
+      toast.error("Description must be at least 8 characters");
+      return;
+    }
+
+    let finalGithubLink = editGithubLink.trim();
+    if (finalGithubLink && !/^https?:\/\//i.test(finalGithubLink)) {
+      finalGithubLink = `https://${finalGithubLink}`;
+    }
+
+    let finalLiveDemoLink = editLiveDemoLink.trim();
+    if (finalLiveDemoLink && !/^https?:\/\//i.test(finalLiveDemoLink)) {
+      finalLiveDemoLink = `https://${finalLiveDemoLink}`;
+    }
+
     setProjectDetailsLoading(true);
 
     try {
@@ -240,8 +280,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         title: editTitle,
         description: editDescription,
         category: editCategory,
-        github_link: editGithubLink,
-        live_demo_link: editLiveDemoLink,
+        github_link: finalGithubLink,
+        live_demo_link: finalLiveDemoLink,
       });
       toast.success("Project details updated!");
       setProjectDetailsModal(null);
