@@ -43,6 +43,15 @@ const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 
 const CATEGORIES = ["Frontend", "Backend", "Fullstack", "Design", "AI/ML", "Mobile", "Other"];
 
+const isValidUrl = (str: string) => {
+  try {
+    const url = new URL(str);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   isOpen,
   onClose,
@@ -192,10 +201,18 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     if (finalGithubLink && !/^https?:\/\//i.test(finalGithubLink)) {
       finalGithubLink = `https://${finalGithubLink}`;
     }
+    if (finalGithubLink && !isValidUrl(finalGithubLink)) {
+      toast.error("Please enter a valid GitHub URL (e.g. https://github.com/user/project)");
+      return;
+    }
 
     let finalLiveDemoLink = liveDemoLink.trim();
     if (finalLiveDemoLink && !/^https?:\/\//i.test(finalLiveDemoLink)) {
       finalLiveDemoLink = `https://${finalLiveDemoLink}`;
+    }
+    if (finalLiveDemoLink && !isValidUrl(finalLiveDemoLink)) {
+      toast.error("Please enter a valid Live Demo URL (e.g. https://myproject.com)");
+      return;
     }
 
     setActionLoading(true);
@@ -275,10 +292,18 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     if (finalGithubLink && !/^https?:\/\//i.test(finalGithubLink)) {
       finalGithubLink = `https://${finalGithubLink}`;
     }
+    if (finalGithubLink && !isValidUrl(finalGithubLink)) {
+      toast.error("Please enter a valid GitHub URL (e.g. https://github.com/user/project)");
+      return;
+    }
 
     let finalLiveDemoLink = editLiveDemoLink.trim();
     if (finalLiveDemoLink && !/^https?:\/\//i.test(finalLiveDemoLink)) {
       finalLiveDemoLink = `https://${finalLiveDemoLink}`;
+    }
+    if (finalLiveDemoLink && !isValidUrl(finalLiveDemoLink)) {
+      toast.error("Please enter a valid Live Demo URL (e.g. https://myproject.com)");
+      return;
     }
 
     setProjectDetailsLoading(true);
@@ -352,10 +377,20 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     resetStatus();
+
+    if (!profileName.trim()) {
+      toast.error("Profile name cannot be empty");
+      return;
+    }
+    if (profileName.trim().length < 3) {
+      toast.error("Profile name must be at least 3 characters");
+      return;
+    }
+
     setProfileLoading(true);
 
     try {
-      const payload: any = { name: profileName };
+      const payload: any = { name: profileName.trim() };
       if (profilePassword) {
         if (profilePassword.length < 8) {
           throw new Error("Password must be at least 8 characters");
@@ -619,7 +654,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                 <form onSubmit={handleSaveProjectDetails} className="space-y-4">
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                      Project Title
+                      Project Title (min. 4 characters)
                     </label>
                     <input
                       type="text"
@@ -627,19 +662,27 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                       onChange={(e) => setEditTitle(e.target.value)}
                       className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
                       required
+                      minLength={4}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                      Description
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500">
+                        Description (8 - 1000 characters)
+                      </label>
+                      <span className={`text-[9px] font-black ${editDescription.length > 1000 ? "text-brand-rose" : "text-zinc-400"}`}>
+                        {editDescription.length} / 1000
+                      </span>
+                    </div>
                     <textarea
                       rows={4}
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
                       className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold resize-none"
                       required
+                      minLength={8}
+                      maxLength={1000}
                     />
                   </div>
 
@@ -712,7 +755,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
               <form onSubmit={handleCreateProject} className="space-y-4 max-w-lg">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                    Project Title
+                    Project Title (min. 4 characters)
                   </label>
                   <input
                     type="text"
@@ -721,13 +764,19 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold"
                     required
+                    minLength={4}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                    Description
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500">
+                      Description (8 - 1000 characters)
+                    </label>
+                    <span className={`text-[9px] font-black ${description.length > 1000 ? "text-brand-rose" : "text-zinc-400"}`}>
+                      {description.length} / 1000
+                    </span>
+                  </div>
                   <textarea
                     placeholder="Describe your sandbox, architectures, database structures, or UI animations..."
                     rows={4}
@@ -735,6 +784,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full px-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold resize-none"
                     required
+                    minLength={8}
+                    maxLength={1000}
                   />
                 </div>
 
@@ -967,12 +1018,17 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
             </div>
             <form onSubmit={handleSaveProjectDetails} className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1">Title</label>
-                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-4 py-2 sm:py-2.5 awwwards-input rounded-none text-sm font-semibold" required />
+                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1">Title (min. 4 characters)</label>
+                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-4 py-2 sm:py-2.5 awwwards-input rounded-none text-sm font-semibold" required minLength={4} />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1">Description</label>
-                <textarea rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="w-full px-4 py-2 sm:py-2.5 awwwards-input rounded-none text-sm font-semibold resize-none" required />
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500">Description (8 - 1000 characters)</label>
+                  <span className={`text-[9px] font-black ${editDescription.length > 1000 ? "text-brand-rose" : "text-zinc-400"}`}>
+                    {editDescription.length} / 1000
+                  </span>
+                </div>
+                <textarea rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="w-full px-4 py-2 sm:py-2.5 awwwards-input rounded-none text-sm font-semibold resize-none" required minLength={8} maxLength={1000} />
               </div>
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1">Category</label>
