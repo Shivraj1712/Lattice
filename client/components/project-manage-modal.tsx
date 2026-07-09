@@ -183,6 +183,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       toast.error("Description must be at least 8 characters");
       return;
     }
+    if (description.trim().length > 1000) {
+      toast.error("Description must be at most 1000 characters");
+      return;
+    }
 
     let finalGithubLink = githubLink.trim();
     if (finalGithubLink && !/^https?:\/\//i.test(finalGithubLink)) {
@@ -260,6 +264,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     }
     if (editDescription.trim().length < 8) {
       toast.error("Description must be at least 8 characters");
+      return;
+    }
+    if (editDescription.trim().length > 1000) {
+      toast.error("Description must be at most 1000 characters");
       return;
     }
 
