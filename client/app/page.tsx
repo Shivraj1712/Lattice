@@ -20,6 +20,7 @@ export default function Home() {
   // Projects State
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Search & Filter State
@@ -69,8 +70,13 @@ export default function Home() {
   }, [projects[0]?.project_id]);
 
   // Fetch projects on load
-  const loadProjects = async () => {
-    setLoading(true);
+  const loadProjects = async (silent = false) => {
+    const isInitial = projects.length === 0;
+    if (isInitial) {
+      if (!silent) setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setError(null);
     try {
       const response = await api.getAllProjects();
@@ -87,6 +93,7 @@ export default function Home() {
       setError("Unable to load projects. Ensure the backend server is running.");
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -478,9 +485,26 @@ export default function Home() {
         
         {/* Section Title */}
         <div className="flex items-center justify-between mb-8 border-b-2 border-brand-black pb-4">
-          <h2 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
-            <span>Explore Showcase</span>
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+              <span>Explore Showcase</span>
+            </h2>
+            <button
+              onClick={() => loadProjects(true)}
+              disabled={isRefreshing}
+              className="px-2.5 py-1 bg-white hover:bg-brand-black hover:text-white border border-brand-black text-[9px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-1.5"
+              title="Force Refresh Data"
+            >
+              {isRefreshing ? (
+                <>
+                  <span>Syncing</span>
+                  <Loader2 size={10} className="animate-spin text-brand-rose" />
+                </>
+              ) : (
+                <span>Refresh ⟳</span>
+              )}
+            </button>
+          </div>
           {selectedCategory && (
             <span className="text-xs font-black uppercase tracking-wider text-brand-rose">
               Filtered: {selectedCategory}
@@ -502,7 +526,7 @@ export default function Home() {
               {error}
             </p>
             <button
-              onClick={loadProjects}
+              onClick={() => loadProjects()}
               className="awwwards-btn-secondary px-6 py-2 text-xs"
             >
               Retry Connection
@@ -530,7 +554,7 @@ export default function Home() {
           </div>
         ) : (
           /* Cards Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 transition-opacity duration-300 ${isRefreshing ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
             {filteredProjects.map((proj) => (
               <ProjectCard
                 key={proj.project_id}
@@ -577,7 +601,9 @@ export default function Home() {
         isOpen={manageOpen}
         onClose={() => {
           setManageOpen(false);
-          loadProjects(); // Reload projects list in case any updates/deletes happened
+        }}
+        onProjectsChanged={() => {
+          loadProjects(true); // background silent load
         }}
         initialTab={manageTab}
       />

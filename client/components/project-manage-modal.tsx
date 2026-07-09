@@ -23,6 +23,7 @@ interface ProjectManageModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: "projects" | "add" | "profile";
+  onProjectsChanged?: () => void;
 }
 
 const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -46,6 +47,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   isOpen,
   onClose,
   initialTab = "projects",
+  onProjectsChanged,
 }) => {
   const { user, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"projects" | "add" | "profile">(initialTab);
@@ -195,6 +197,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       
       // Reload projects list and switch to list tab
       await fetchMyProjects();
+      if (onProjectsChanged) onProjectsChanged();
       setActiveTab("projects");
     } catch (err: any) {
       toast.error(err.message || "Failed to create project");
@@ -243,6 +246,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       setProjectDetailsModal(null);
       setEditingProject(null);
       await fetchMyProjects();
+      if (onProjectsChanged) onProjectsChanged();
     } catch (err: any) {
       toast.error(err.message || "Failed to update project");
     } finally {
@@ -265,6 +269,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       if (projectImageModalRef.current) projectImageModalRef.current.value = "";
       setProjectImageModal(null);
       await fetchMyProjects();
+      if (onProjectsChanged) onProjectsChanged();
     } catch (err: any) {
       toast.error(err.message || "Failed to update project image");
     } finally {
@@ -284,6 +289,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
           await api.deleteProject(projectId);
           toast.success("Project deleted.");
           await fetchMyProjects();
+          if (onProjectsChanged) onProjectsChanged();
         } catch (err: any) {
           toast.error(err.message || "Failed to delete project");
         } finally {
