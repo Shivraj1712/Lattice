@@ -58,11 +58,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 transition-all duration-300">
-      <div className="relative w-full max-w-md bg-white border-2 border-brand-black rounded-none shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 transition-all duration-300 overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white border-2 border-brand-black rounded-none shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] my-auto max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b-2 border-brand-black">
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b-2 border-brand-black flex-shrink-0">
           <span className="text-xl font-black uppercase text-brand-black tracking-tight">
             {tab === "login" ? "Sign In" : "Join Lattice"}
           </span>
@@ -74,48 +74,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-grow">
           {error && (
-            <div className="p-3.5 mb-4 text-xs font-bold uppercase tracking-wider bg-brand-rose/10 border-2 border-brand-rose text-brand-rose">
+            <div className="p-3 mb-4 text-xs font-bold uppercase tracking-wider bg-brand-rose/10 border-2 border-brand-rose text-brand-rose">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             {tab === "signup" && (
               <div className="relative">
-                <UserIcon className="absolute left-3.5 top-3.5 text-brand-black" size={16} />
+                <UserIcon className="absolute left-3.5 top-3 sm:top-3.5 text-brand-black" size={16} />
                 <input
                   type="text"
                   placeholder="Full Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 awwwards-input rounded-none text-sm font-semibold"
+                  className="w-full pl-11 pr-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold"
                   required
                 />
               </div>
             )}
 
             <div className="relative">
-              <Mail className="absolute left-3.5 top-3.5 text-brand-black" size={16} />
+              <Mail className="absolute left-3.5 top-3 sm:top-3.5 text-brand-black" size={16} />
               <input
                 type="email"
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 awwwards-input rounded-none text-sm font-semibold"
+                className="w-full pl-11 pr-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold"
                 required
               />
             </div>
 
             <div className="relative">
-              <Lock className="absolute left-3.5 top-3.5 text-brand-black" size={16} />
+              <Lock className="absolute left-3.5 top-3 sm:top-3.5 text-brand-black" size={16} />
               <input
                 type="password"
                 placeholder="Password (min. 8 chars)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 awwwards-input rounded-none text-sm font-semibold"
+                className="w-full pl-11 pr-4 py-2 sm:py-3 awwwards-input rounded-none text-sm font-semibold"
                 required
               />
             </div>
@@ -123,7 +123,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="awwwards-btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+              className="awwwards-btn-primary flex items-center justify-center gap-2 w-full py-2.5 sm:py-3.5 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -137,7 +137,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </form>
 
           {/* Divider */}
-          <div className="relative flex py-4 items-center">
+          <div className="relative flex py-3 sm:py-4 items-center">
             <div className="flex-grow border-t-2 border-zinc-200"></div>
             <span className="flex-shrink mx-4 text-[10px] font-black uppercase text-zinc-400">Or connect with</span>
             <div className="flex-grow border-t-2 border-zinc-200"></div>
@@ -147,7 +147,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             onClick={handleGoogleLogin}
             type="button"
-            className="flex items-center justify-center gap-3 w-full py-3.5 bg-white border-2 border-brand-black hover:bg-zinc-50 text-brand-black text-xs font-black uppercase rounded-none shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer"
+            className="flex items-center justify-center gap-3 w-full py-2.5 sm:py-3.5 bg-white border-2 border-brand-black hover:bg-zinc-50 text-brand-black text-xs font-black uppercase rounded-none shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -171,7 +171,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
 
           {/* Toggle Flow Footer */}
-          <div className="mt-6 text-center border-t-2 border-brand-black pt-4">
+          <div className="mt-4 sm:mt-6 text-center border-t-2 border-brand-black pt-3 sm:pt-4">
             {tab === "login" ? (
               <p className="text-xs font-bold text-brand-black uppercase tracking-wide">
                 Don't have an account?{" "}

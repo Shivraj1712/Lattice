@@ -74,11 +74,11 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
   const displayAvatar = profile?.avatar || avatarUrl || null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white border-2 border-brand-black shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex flex-col rounded-none">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-black/70 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-2xl my-auto max-h-[calc(100vh-2rem)] overflow-y-auto bg-white border-2 border-brand-black shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex flex-col rounded-none">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-brand-black sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b-2 border-brand-black sticky top-0 bg-white z-10">
           <div className="flex items-center gap-2">
             <User size={14} className="text-brand-black stroke-[2.5]" />
             <span className="text-[10px] font-black uppercase tracking-widest text-brand-black">
@@ -95,8 +95,8 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 md:p-8 space-y-8">
-
+        <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
+          
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="w-8 h-8 border-4 border-brand-black border-t-brand-rose animate-spin rounded-full" />
@@ -117,7 +117,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
           ) : (
             <>
               {/* Profile Hero */}
-              <div className="flex items-center gap-5 border-2 border-brand-black p-5 shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] bg-zinc-50">
+              <div className="flex items-center gap-4 sm:gap-5 border-2 border-brand-black p-4 sm:p-5 shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] bg-zinc-50">
                 {displayAvatar ? (
                   <img
                     src={displayAvatar}

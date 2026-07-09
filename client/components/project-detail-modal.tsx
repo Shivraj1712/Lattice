@@ -83,11 +83,11 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 transition-all duration-300">
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white border-2 border-brand-black rounded-none shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex flex-col scrollbar-thin">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 transition-all duration-300 overflow-y-auto">
+      <div className="relative w-full max-w-3xl my-auto max-h-[calc(100vh-2rem)] overflow-y-auto bg-white border-2 border-brand-black rounded-none shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex flex-col scrollbar-thin">
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b-2 border-brand-black sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b-2 border-brand-black sticky top-0 bg-white z-10">
           <span className="px-3 py-1 bg-brand-black text-white text-xs font-black uppercase tracking-wider border-2 border-brand-black rounded-none">
             {project.category} - Project Details
           </span>
@@ -100,7 +100,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 md:p-8 space-y-6 bg-white">
+        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 bg-white">
 
           {/* Main Cover Image */}
           <div className="relative aspect-[16/9] w-full overflow-hidden border-2 border-brand-black rounded-none bg-zinc-50">
@@ -154,7 +154,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 href={project.github_link.startsWith("http") ? project.github_link : `https://${project.github_link}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="awwwards-btn-secondary px-5 py-3 rounded-none text-xs flex items-center gap-1.5"
+                className="awwwards-btn-secondary px-3 py-2 sm:px-5 sm:py-3 rounded-none text-xs flex items-center gap-1.5"
               >
                 <GithubIcon className="text-brand-black" />
                 <span>Repository</span>
@@ -165,7 +165,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 href={project.live_demo_link.startsWith("http") ? project.live_demo_link : `https://${project.live_demo_link}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="awwwards-btn-primary px-5 py-3 rounded-none text-xs flex items-center gap-1.5"
+                className="awwwards-btn-primary px-3 py-2 sm:px-5 sm:py-3 rounded-none text-xs flex items-center gap-1.5"
               >
                 <ExternalLink size={15} />
                 <span>Live Project</span>

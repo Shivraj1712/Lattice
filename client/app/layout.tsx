@@ -6,6 +6,9 @@ import { ToastProvider } from "../context/toast-context";
 export const metadata: Metadata = {
   title: "Lattice — Showcasing Developer Projects",
   description: "A premium, Dribbble-inspired project sharing and exploration network for developers.",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({
