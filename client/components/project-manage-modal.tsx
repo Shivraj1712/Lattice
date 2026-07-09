@@ -231,7 +231,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     setEditingProject(proj);
     setEditTitle(proj.title);
     setEditDescription(proj.description);
-    setEditCategory(proj.category || CATEGORIES[0]);
+    setEditCategory(CATEGORIES.includes(proj.category) ? proj.category : CATEGORIES[0]);
     setEditGithubLink(proj.github_link);
     setEditLiveDemoLink(proj.live_demo_link);
     resetStatus();
@@ -242,7 +242,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     setProjectDetailsModal(proj);
     setEditTitle(proj.title);
     setEditDescription(proj.description);
-    setEditCategory(proj.category || CATEGORIES[0]);
+    setEditCategory(CATEGORIES.includes(proj.category) ? proj.category : CATEGORIES[0]);
     setEditGithubLink(proj.github_link);
     setEditLiveDemoLink(proj.live_demo_link);
   };
