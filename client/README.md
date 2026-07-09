@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lattice — Client
 
-## Getting Started
+The frontend for Lattice. A Next.js 16 application that lets developers publish and browse project portfolios.
 
-First, run the development server:
+## Tech stack
+
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| HTTP client | Axios (with `withCredentials: true` for cross-domain cookies) |
+| Icons | Lucide React |
+| Runtime | React 19 |
+
+## Project structure
+
+```
+client/
+├── app/
+│   ├── page.tsx                  # Home feed — browse all projects
+│   ├── layout.tsx                # Root layout
+│   └── profile/[userId]/         # Public profile page for any user
+├── components/
+│   ├── header.tsx                # Top navigation bar
+│   ├── auth-modal.tsx            # Login / signup modal
+│   ├── project-card.tsx          # Project tile shown in the feed
+│   ├── project-detail-modal.tsx  # Full project detail overlay
+│   ├── project-manage-modal.tsx  # Create / edit project form
+│   └── public-profile-modal.tsx  # Quick profile view
+├── context/                      # React context providers
+├── lib/
+│   ├── api.ts                    # Axios client + all typed API calls
+│   ├── profile-cache.ts          # In-memory cache for public profiles
+│   └── profile-details.ts        # Profile data fetching helpers
+└── public/                       # Static assets
+```
+
+## Environment variables
+
+Create a `.env.local` file in this directory (or set in the Vercel dashboard):
+
+```env
+NEXT_PUBLIC_API_URL=https://lattice.onrender.com
+```
+
+This variable **must** be prefixed with `NEXT_PUBLIC_` so Next.js exposes it to the browser bundle. Without it the app falls back to `http://localhost:8080` which will not work in production.
+
+## Running locally
 
 ```bash
+# Install dependencies
+npm install
+# or
+bun install
+
+# Start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 # or
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App runs at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> Make sure the backend server is also running (see `server/readme.md`) or point `NEXT_PUBLIC_API_URL` at the deployed backend.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Building for production
 
-## Learn More
+```bash
+npm run build
+npm run start
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Deployed on **Vercel** at `https://latticegoproject.vercel.app`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Add the following in **Vercel → Project Settings → Environment Variables**:
 
-## Deploy on Vercel
+```
+NEXT_PUBLIC_API_URL = https://lattice.onrender.com
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> `.env.local` is gitignored and will not be picked up by Vercel automatically — you must add the variable through the dashboard.

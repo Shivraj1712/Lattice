@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/Shivraj1712/Lattice.git/internal/config"
@@ -90,11 +91,11 @@ func (r *UserHandler) CompleteOauth(ctx *fiber.Ctx) error {
 		Expires:  time.Now().Add(72 * time.Hour),
 		Path:     "/",
 		Domain:   "",
-		Secure:   false,
+		Secure:   true,
 		HTTPOnly: true,
-		SameSite: "Lax",
+		SameSite: "None",
 	})
-	return ctx.Redirect("http://localhost:3000")
+	return ctx.Redirect(strings.TrimRight(config.Configuration.FrontendUrl, "/"))
 }
 
 // @Summary			User Login
@@ -133,8 +134,9 @@ func (r *UserHandler) Login(ctx *fiber.Ctx) error {
 		Expires:  time.Now().Add(72 * time.Hour),
 		Path:     "/",
 		Domain:   "",
-		Secure:   false,
+		Secure:   true,
 		HTTPOnly: true,
+		SameSite: "None",
 	})
 	return response.SuccessResponse(ctx, "User Login Successful", nil, fiber.StatusOK)
 }
@@ -171,8 +173,9 @@ func (r *UserHandler) SignUp(ctx *fiber.Ctx) error {
 		Expires:  time.Now().Add(72 * time.Hour),
 		Path:     "/",
 		Domain:   "",
-		Secure:   false,
+		Secure:   true,
 		HTTPOnly: true,
+		SameSite: "None",
 	})
 	return response.SuccessResponse(ctx, "Sign Up Successful", nil, fiber.StatusCreated)
 }
@@ -232,8 +235,9 @@ func (r *UserHandler) Logout(ctx *fiber.Ctx) error {
 		Expires:  time.Now().Add(-24 * time.Hour),
 		Path:     "/",
 		Domain:   "",
-		Secure:   false,
+		Secure:   true,
 		HTTPOnly: true,
+		SameSite: "None",
 	})
 	return response.SuccessResponse(ctx, "User logout successful", nil, fiber.StatusOK)
 }
@@ -387,8 +391,9 @@ func (r *UserHandler) DeleteUser(ctx *fiber.Ctx) error {
 		Expires:  time.Now().Add(-24 * time.Hour),
 		Path:     "/",
 		Domain:   "",
-		Secure:   false,
+		Secure:   true,
 		HTTPOnly: true,
+		SameSite: "None",
 	})
 	return response.SuccessResponse(ctx, "User Account Deleted", nil, fiber.StatusOK)
 }

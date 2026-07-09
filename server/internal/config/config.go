@@ -16,15 +16,14 @@ type Config struct {
 	GoogleClientSecret string
 	GoogleCallbackUrl  string
 	CloudinaryUrl      string
+	FrontendUrl        string
 }
 
 var Configuration *Config
 
 func FetchConfig() {
-	err := godotenv.Load()
-	if err != nil {
-		slog.Error("Failed to load env file values", "error", err)
-		os.Exit(1)
+	if err := godotenv.Load(); err != nil {
+		slog.Warn("No .env file found, reading environment variables from host", "info", err)
 	}
 	databaseUrl := os.Getenv("DATABASE_URL")
 	if databaseUrl == "" {
@@ -39,5 +38,6 @@ func FetchConfig() {
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleCallbackUrl:  os.Getenv("GOOGLE_CALLBACK_URL"),
 		CloudinaryUrl:      os.Getenv("CLOUDINARY_URL"),
+		FrontendUrl:        os.Getenv("FRONTEND_URL"),
 	}
 }
