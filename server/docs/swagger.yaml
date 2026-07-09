@@ -1,5 +1,5 @@
 basePath: /
-host: localhost:8080
+host: lattice-xd9g.onrender.com
 info:
   contact: {}
   description: API for the responding to the Client Side section of the Client Server

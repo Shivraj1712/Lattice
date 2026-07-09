@@ -19,7 +19,7 @@ import (
 // @title 			Lattice API
 // @version			1.0
 // @description 	API for the responding to the Client Side section of the Client Server Architecture
-// @host			localhost:8080
+// @host			lattice-xd9g.onrender.com
 // @BasePath		/
 func main() {
 	config.FetchConfig()
@@ -33,6 +33,7 @@ func main() {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
 	})
+	app.Get("/swagger/*", swagger.HandlerDefault)
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     config.Configuration.FrontendUrl,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
@@ -42,7 +43,6 @@ func main() {
 	handler.OauthInit()
 	router.ProjectRoutes(app)
 	router.UserRoutes(app)
-	app.Get("/swagger/*", swagger.HandlerDefault)
 	if err := app.Listen(":8080"); err != nil {
 		slog.Error("Server listen failed", "error", err)
 	}

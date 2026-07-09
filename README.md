@@ -36,5 +36,5 @@ See each subdirectory's own README for setup and deployment details.
 | Service | URL |
 |---|---|
 | Frontend | https://latticegoproject.vercel.app |
-| Backend API | https://lattice.onrender.com |
-| Swagger docs | https://lattice.onrender.com/swagger/ |
+| Backend API | https://lattice-xd9g.onrender.com |
+| Swagger docs | https://lattice-xd9g.onrender.com/swagger/ |
