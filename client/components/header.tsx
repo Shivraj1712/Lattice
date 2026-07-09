@@ -16,12 +16,13 @@ import {
 } from "lucide-react";
 
 interface HeaderProps {
-  onSearch: (term: string) => void;
+  onSearch: (term: string, immediate?: boolean) => void;
   onSelectCategory: (category: string) => void;
   selectedCategory: string;
   onOpenAuth: (tab: "login" | "signup") => void;
   onOpenManage: (tab: "projects" | "add" | "profile") => void;
   projects: any[];
+  searchValue?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,10 +32,16 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onOpenManage,
   projects = [],
+  searchValue = "",
 }) => {
   const { user, logout } = useAuth();
   const toast = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchValue);
+
+  // Sync state when controlled value changes (e.g. cleared on close)
+  useEffect(() => {
+    setSearchTerm(searchValue);
+  }, [searchValue]);
 
   // Dropdown states
   const [exploreMenuOpen, setExploreMenuOpen] = useState(false);
@@ -74,7 +81,13 @@ export const Header: React.FC<HeaderProps> = ({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearchTerm(val);
-    onSearch(val);
+    onSearch(val, false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onSearch(searchTerm, true);
+    }
   };
 
   const handleCategorySelect = (cat: string) => {
@@ -135,6 +148,7 @@ export const Header: React.FC<HeaderProps> = ({
                 placeholder="Search by Inspiration"
                 value={searchTerm}
                 onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
                 className="w-full pl-9 pr-3 py-2 bg-white border-2 border-brand-black rounded-none outline-none text-xs text-brand-black placeholder-brand-black font-bold shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] focus:shadow-[3px_3px_0px_0px_rgba(24,22,22,1)] transition-all"
               />
             </div>
@@ -307,6 +321,7 @@ export const Header: React.FC<HeaderProps> = ({
                 placeholder="Search by Inspiration"
                 value={searchTerm}
                 onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
                 className="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-brand-black rounded-none outline-none text-sm text-brand-black font-bold shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                 autoFocus
               />

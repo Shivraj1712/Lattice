@@ -133,6 +133,7 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
         onOpenAuth={openAuthModal}
         onOpenManage={openManageModal}
         projects={userProjects}
+        searchValue={searchTerm}
       />
 
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1">

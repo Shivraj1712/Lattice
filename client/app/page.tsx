@@ -97,10 +97,11 @@ export default function Home() {
   // Debounce search input -> searchTerm (300ms)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (searchInput === searchTerm) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setSearchTerm(searchInput), 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [searchInput]);
+  }, [searchInput, searchTerm]);
 
   // Safeguard: Close Auth Modal if user is logged in
   useEffect(() => {
@@ -134,7 +135,13 @@ export default function Home() {
     });
   }, [projects, searchTerm, selectedCategory]);
 
-  const onSearch = useCallback((val: string) => setSearchInput(val), []);
+  const onSearch = useCallback((val: string, immediate = false) => {
+    setSearchInput(val);
+    if (immediate) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      setSearchTerm(val);
+    }
+  }, []);
   const onSelectCategory = useCallback((cat: string) => setSelectedCategory(cat), []);
 
   if (authLoading) {
@@ -182,6 +189,7 @@ export default function Home() {
         onOpenAuth={openAuthModal}
         onOpenManage={openManageModal}
         projects={projects}
+        searchValue={searchInput}
       />
 
       {/* Hero Banner wrapper with Search Overlay */}
