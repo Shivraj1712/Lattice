@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useAuth } from "../context/auth-context";
 import { api, Project } from "../lib/api";
+import { USER_ID_TO_EMAIL } from "../lib/profile-details";
+import { useRouter } from "next/navigation";
 import { Header } from "../components/header";
 import { ProjectCard } from "../components/project-card";
 import { ProjectDetailModal } from "../components/project-detail-modal";
@@ -13,6 +15,7 @@ import { Loader2, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   
   // Projects State
   const [projects, setProjects] = useState<Project[]>([]);
@@ -21,6 +24,7 @@ export default function Home() {
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // raw input, debounced into searchTerm
   const [selectedCategory, setSelectedCategory] = useState("");
 
   // Modal States
@@ -45,6 +49,25 @@ export default function Home() {
 
   const closeProfileModal = () => setProfileModalData(null);
 
+  // Featured author profile cache
+  const [featuredProfile, setFeaturedProfile] = useState<null | { name: string; email: string; avatar?: string }>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setFeaturedProfile(null);
+    const email = projects[0]?.user?.email || (projects[0]?.user_id ? USER_ID_TO_EMAIL[projects[0].user_id] : undefined);
+    if (!email) return;
+    import("../lib/profile-cache").then(({ fetchCachedPublicProfile }) => {
+      fetchCachedPublicProfile(email).then((p) => {
+        if (!mounted) return;
+        if (p) setFeaturedProfile({ name: p.name, email: p.email, avatar: (p as any).avatar || p.avatar_url });
+      });
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [projects[0]?.project_id]);
+
   // Fetch projects on load
   const loadProjects = async () => {
     setLoading(true);
@@ -52,7 +75,10 @@ export default function Home() {
     try {
       const response = await api.getAllProjects();
       if (response.success && response.data) {
-        setProjects(response.data);
+        const sorted = [...response.data].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setProjects(sorted);
       } else {
         setProjects([]);
       }
@@ -68,6 +94,14 @@ export default function Home() {
     loadProjects();
   }, []);
 
+  // Debounce search input -> searchTerm (300ms)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setSearchTerm(searchInput), 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchInput]);
+
   // Safeguard: Close Auth Modal if user is logged in
   useEffect(() => {
     if (user && authOpen) {
@@ -79,6 +113,7 @@ export default function Home() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        setSearchInput("");
         setSearchTerm("");
         setSelectedCategory("");
       }
@@ -96,20 +131,20 @@ export default function Home() {
     );
   }
 
-  // Compute filtered projects in memory
-  const filteredProjects = projects.filter((proj) => {
-    if (selectedCategory && proj.category.toLowerCase() !== selectedCategory.toLowerCase()) {
-      return false;
-    }
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      return (
-        proj.title.toLowerCase().includes(term) ||
-        proj.description.toLowerCase().includes(term)
-      );
-    }
-    return true;
-  });
+  // Memoized filtered projects
+  const filteredProjects = useMemo(() => {
+    return projects.filter((proj) => {
+      if (selectedCategory && proj.category.toLowerCase() !== selectedCategory.toLowerCase()) return false;
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        return proj.title.toLowerCase().includes(term) || proj.description.toLowerCase().includes(term);
+      }
+      return true;
+    });
+  }, [projects, searchTerm, selectedCategory]);
+
+  const onSearch = useCallback((val: string) => setSearchInput(val), []);
+  const onSelectCategory = useCallback((cat: string) => setSelectedCategory(cat), []);
 
   const openAuthModal = (tab: "login" | "signup") => {
     setAuthTab(tab);
@@ -122,26 +157,26 @@ export default function Home() {
   };
 
   const getFeaturedAuthorName = () => {
-    if (!projects[0]) return "Shivraj";
+    if (!projects[0]) return user?.name || user?.email || "Unknown";
     if (user && projects[0].user_id === user.user_id) {
-      return user.name || "Shivraj";
+      return user.name || user.email || "Unknown";
     }
-    return projects[0].user?.name || "Shivraj";
+    return featuredProfile?.name || projects[0].user?.name || projects[0].user?.email || "Unknown";
   };
 
   const getFeaturedAuthorAvatar = () => {
-    if (!projects[0]) return null;
+    if (!projects[0]) return user?.avatar_url || null;
     if (user && projects[0].user_id === user.user_id) {
       return user.avatar_url || null;
     }
-    return projects[0].user?.avatar_url || null;
+    return featuredProfile?.avatar || projects[0].user?.avatar_url || null;
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-brand-black selection:bg-brand-rose selection:text-white">
       <Header
-        onSearch={setSearchTerm}
-        onSelectCategory={setSelectedCategory}
+        onSearch={onSearch}
+        onSelectCategory={onSelectCategory}
         selectedCategory={selectedCategory}
         onOpenAuth={openAuthModal}
         onOpenManage={openManageModal}
@@ -157,50 +192,51 @@ export default function Home() {
               <div className="space-y-6">
                 
                 {/* Header of Search Modal */}
-                <div className="flex items-center justify-between border-b-2 border-brand-black pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-rose opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-rose border border-brand-black"></span>
-                    </span>
-                    <h2 className="text-sm font-black uppercase tracking-wider text-brand-black">
-                      Search Index // Matches for:{" "}
-                      <span className="text-brand-rose">
-                        {searchTerm ? `"${searchTerm}"` : ""}
-                        {searchTerm && selectedCategory ? " + " : ""}
-                        {selectedCategory ? `[${selectedCategory}]` : ""}
+          <div className="flex items-center justify-between border-b-2 border-brand-black pb-4 flex-wrap gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="relative flex h-3 w-3 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-rose opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-rose border border-brand-black"></span>
                       </span>
-                    </h2>
-                  </div>
+                      <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-brand-black truncate">
+                        Matches:{" "}
+                        <span className="text-brand-rose">
+                          {searchTerm ? `"${searchTerm}"` : ""}
+                          {searchTerm && selectedCategory ? " + " : ""}
+                          {selectedCategory ? `[${selectedCategory}]` : ""}
+                        </span>
+                      </h2>
+                    </div>
                   <button
                     onClick={() => {
+                      setSearchInput("");
                       setSearchTerm("");
                       setSelectedCategory("");
                     }}
-                    className="p-1 border-2 border-transparent hover:border-brand-black text-brand-rose font-black text-xs uppercase tracking-wider transition-all cursor-pointer"
+                    className="p-1 border-2 border-transparent hover:border-brand-black text-brand-rose font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex-shrink-0"
                   >
-                    Close Search [x]
+                    Close [x]
                   </button>
                 </div>
 
                 {/* Match count and active filters */}
                 <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {searchTerm && (
                       <span className="px-2.5 py-1 bg-zinc-100 border border-brand-black font-semibold flex items-center gap-1.5 uppercase text-[10px]">
                         Query: {searchTerm}
-                        <button onClick={() => setSearchTerm("")} className="text-brand-rose font-black hover:underline cursor-pointer">×</button>
+                        <button onClick={() => { setSearchInput(""); setSearchTerm(""); }} className="text-brand-rose font-black hover:underline cursor-pointer">×</button>
                       </span>
                     )}
                     {selectedCategory && (
                       <span className="px-2.5 py-1 bg-zinc-100 border border-brand-black font-semibold flex items-center gap-1.5 uppercase text-[10px]">
-                        Category: {selectedCategory}
+                        Cat: {selectedCategory}
                         <button onClick={() => setSelectedCategory("")} className="text-brand-rose font-black hover:underline cursor-pointer">×</button>
                       </span>
                     )}
                   </div>
                   <span className="font-bold text-zinc-500 uppercase text-[10px]">
-                    {filteredProjects.length} matches indexed
+                    {filteredProjects.length} matches
                   </span>
                 </div>
 
@@ -244,24 +280,24 @@ export default function Home() {
               </div>
               
               <div className="text-[9px] text-zinc-400 font-mono uppercase tracking-widest pt-6 border-t border-zinc-100 text-left">
-                Lattice Search Engine // Press esc or click close to return to index
+                Lattice Search Engine - Press esc or click close to return to index
               </div>
 
             </div>
           </div>
         )}
 
-        <section className="relative py-8 px-4 md:py-12 md:px-8 bg-zinc-50 border-b-4 border-brand-black">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <section className="relative py-6 px-4 md:py-12 md:px-8 bg-zinc-50 border-b-4 border-brand-black">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Column - Copy & Actions */}
-          <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-brand-rose border-2 border-brand-black text-white text-[10px] font-black uppercase tracking-wider rounded-none">
-              <Sparkles size={11} className="stroke-[2.5]" />
-              <span>Project Showcase // Live</span>
+          <div className="lg:col-span-7 space-y-5 text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand-rose border-2 border-brand-black text-white text-[10px] font-black uppercase tracking-wider rounded-none">
+              <Sparkles size={10} className="stroke-[2.5]" />
+              <span>Project Showcase - Live</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] text-brand-black">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] text-brand-black">
               Explore
               <br />
               <span className="bg-gradient-to-r from-brand-rose to-brand-rose bg-clip-text text-transparent">
@@ -272,46 +308,46 @@ export default function Home() {
             </h1>
 
             <p className="text-xs sm:text-sm text-brand-black font-semibold leading-relaxed max-w-xl uppercase tracking-wide">
-              Lattice is a minimalist gallery index for full-stack websites, codebase reviews, and backend APIs. Share your code repositories, deploy live preview links, and inspect developer packages.
+              Lattice is a minimalist gallery index for full-stack websites, codebase reviews, and backend APIs.
             </p>
 
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex items-center gap-3 pt-1">
               {user ? (
                 <button
                   onClick={() => openManageModal("add")}
-                  className="awwwards-btn-primary px-6 py-3 text-xs flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
+                  className="awwwards-btn-primary px-5 py-2.5 text-xs flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                 >
                   <span>Submit Project</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={13} />
                 </button>
               ) : (
                 <button
                   onClick={() => openAuthModal("signup")}
-                  className="awwwards-btn-primary px-6 py-3 text-xs flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
+                  className="awwwards-btn-primary px-5 py-2.5 text-xs flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                 >
                   <span>Create Workspace</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={13} />
                 </button>
               )}
             </div>
 
-            {/* Brutalist dividers statistics grid */}
-            <div className="grid grid-cols-3 border-2 border-brand-black divide-x-2 divide-brand-black bg-white rounded-none shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] p-4 max-w-md">
-              <div>
-                <p className="text-xl font-black text-brand-black">{projects.length}</p>
-                <p className="text-[9px] text-brand-black font-black uppercase tracking-wider">Projects</p>
+            {/* Stats grid */}
+            <div className="grid grid-cols-3 border-2 border-brand-black divide-x-2 divide-brand-black bg-white rounded-none shadow-[4px_4px_0px_0px_rgba(24,22,22,1)] max-w-xs">
+              <div className="p-3">
+                <p className="text-lg sm:text-xl font-black text-brand-black">{projects.length}</p>
+                <p className="text-[8px] sm:text-[9px] text-brand-black font-black uppercase tracking-wider">Projects</p>
               </div>
-              <div className="pl-4">
-                <p className="text-xl font-black text-brand-black">
+              <div className="p-3">
+                <p className="text-lg sm:text-xl font-black text-brand-black">
                   {new Set(projects.map((p) => p.user_id)).size}
                 </p>
-                <p className="text-[9px] text-brand-black font-black uppercase tracking-wider">Creators</p>
+                <p className="text-[8px] sm:text-[9px] text-brand-black font-black uppercase tracking-wider">Creators</p>
               </div>
-              <div className="pl-4">
-                <p className="text-xl font-black text-brand-black">
+              <div className="p-3">
+                <p className="text-lg sm:text-xl font-black text-brand-black">
                   {projects.filter((p) => p.live_demo_link).length}
                 </p>
-                <p className="text-[9px] text-brand-black font-black uppercase tracking-wider">Live Demos</p>
+                <p className="text-[8px] sm:text-[9px] text-brand-black font-black uppercase tracking-wider">Live</p>
               </div>
             </div>
           </div>
@@ -322,7 +358,7 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b-2 border-brand-black pb-3">
                   <span className="text-[10px] font-black uppercase tracking-widest text-brand-black">
-                    Featured Project Review // 01
+                    Featured Project Review - 01
                   </span>
                   <span className="relative flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-rose opacity-75 border border-brand-black"></span>
@@ -399,7 +435,19 @@ export default function Home() {
               </div>
 
               {/* Author footer */}
-              <div className="flex items-center justify-between border-t-2 border-brand-black pt-4">
+              <div
+                onClick={() => {
+                  const feat = projects[0];
+                  if (!feat) return;
+                  const targetUserId = feat.user_id;
+                  const targetEmail = feat.user?.email || USER_ID_TO_EMAIL[targetUserId];
+                  const targetName = getFeaturedAuthorName();
+                  if (targetUserId && targetEmail) {
+                    router.push(`/profile/${targetUserId}?email=${encodeURIComponent(targetEmail)}&name=${encodeURIComponent(targetName)}`);
+                  }
+                }}
+                className="flex items-center justify-between border-t-2 border-brand-black pt-4 cursor-pointer hover:bg-zinc-50 transition-all"
+              >
                 <div className="flex items-center gap-2">
                   {getFeaturedAuthorAvatar() ? (
                     <img
@@ -416,7 +464,7 @@ export default function Home() {
                     {getFeaturedAuthorName()}
                   </span>
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-wider text-brand-black">Author</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-brand-black">Author ↗</span>
               </div>
             </div>
           </div>
@@ -430,7 +478,7 @@ export default function Home() {
         {/* Section Title */}
         <div className="flex items-center justify-between mb-8 border-b-2 border-brand-black pb-4">
           <h2 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
-            <span>Explore Showcase //</span>
+            <span>Explore Showcase</span>
           </h2>
           {selectedCategory && (
             <span className="text-xs font-black uppercase tracking-wider text-brand-rose">
@@ -495,7 +543,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t-2 border-brand-black py-8 bg-zinc-50 text-center text-xs font-black uppercase tracking-widest text-brand-black">
-        <p>© 2026 Lattice // Designed for developers. Built with Go & Next.js.</p>
+        <p>© 2026 Lattice. Designed for developers. Built with Go & Next.js.</p>
       </footer>
 
       {/* Modals */}

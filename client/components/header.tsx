@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useAuth } from "../context/auth-context";
 import { useToast } from "../context/toast-context";
 import { isOffline } from "../lib/api";
@@ -34,15 +35,15 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, logout } = useAuth();
   const toast = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Dropdown states
   const [exploreMenuOpen, setExploreMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  
+
   const [offline, setOffline] = useState(false);
-  
+
   const exploreRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -102,10 +103,21 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Row */}
         <div className="flex items-center justify-between h-20 gap-4">
-          
-          {/* Left Section: Logo only */}
+
+          {/* Left Section: Logo */}
           <div className="flex items-center">
-            <div className="flex items-center cursor-pointer gap-2" onClick={() => handleCategorySelect("All")}>
+            <div
+              className="flex items-center gap-2.5 cursor-pointer group"
+              onClick={() => handleCategorySelect("All")}
+            >
+              <Image
+                src="/LatticeLOGO.png"
+                alt="Lattice Logo"
+                width={20}
+                height={40}
+                className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                priority
+              />
               <span className="text-xl font-black uppercase text-brand-black tracking-tighter hover:text-brand-rose transition-colors">
                 Lattice
               </span>
@@ -114,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Section: Search, Explore, Log In, and Submit Project (Desktop Only) */}
           <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
-            
+
             {/* Search Input Bar */}
             <div className="relative w-56">
               <Search className="absolute left-3 top-3 text-brand-black" size={14} />
@@ -147,18 +159,16 @@ export const Header: React.FC<HeaderProps> = ({
                       <div
                         key={item.name}
                         onClick={() => handleCategorySelect(item.name)}
-                        className={`flex items-center justify-between text-xs font-black uppercase px-2 py-2 border-2 border-transparent cursor-pointer transition-all ${
-                          (item.name === "All" && selectedCategory === "") || selectedCategory === item.name
-                            ? "bg-brand-rose text-white border-brand-black"
-                            : "text-brand-black hover:bg-brand-black/10"
-                        }`}
+                        className={`flex items-center justify-between text-xs font-black uppercase px-2 py-2 border-2 border-transparent cursor-pointer transition-all ${(item.name === "All" && selectedCategory === "") || selectedCategory === item.name
+                          ? "bg-brand-rose text-white border-brand-black"
+                          : "text-brand-black hover:bg-brand-black/10"
+                          }`}
                       >
                         <span>{item.label}</span>
-                        <span className={`font-mono text-[10px] font-black ${
-                          (item.name === "All" && selectedCategory === "") || selectedCategory === item.name
-                            ? "text-white"
-                            : "text-brand-black"
-                        }`}>{item.count}</span>
+                        <span className={`font-mono text-[10px] font-black ${(item.name === "All" && selectedCategory === "") || selectedCategory === item.name
+                          ? "text-white"
+                          : "text-brand-black"
+                          }`}>{item.count}</span>
                       </div>
                     ))}
                   </div>
@@ -267,9 +277,8 @@ export const Header: React.FC<HeaderProps> = ({
                 setMobileSearchOpen(!mobileSearchOpen);
                 setMobileMenuOpen(false); // Close menu drawer when opening search
               }}
-              className={`p-2.5 border-2 border-brand-black rounded-none flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] active:translate-y-[1px] transition-colors ${
-                mobileSearchOpen ? "bg-brand-black text-white" : "bg-white text-brand-black"
-              }`}
+              className={`p-2.5 border-2 border-brand-black rounded-none flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] active:translate-y-[1px] transition-colors ${mobileSearchOpen ? "bg-brand-black text-white" : "bg-white text-brand-black"
+                }`}
             >
               <Search size={18} />
             </button>

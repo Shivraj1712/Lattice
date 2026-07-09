@@ -81,7 +81,7 @@ func (r *UserRepoHandler) DeleteUser(ctx context.Context, user_id uuid.UUID) err
 			return errors.New("Internal Server Error")
 		}
 	}
-	err = database.DB.WithContext(ctx).Model(&domain.User{}).Delete(&user).Error
+	err = database.DB.WithContext(ctx).Delete(&user).Error
 	if err != nil {
 		slog.Error("Failed to delete the user from database", "error", err)
 		return errors.New("Internal Server Error")
@@ -103,7 +103,7 @@ func (r *UserRepoHandler) UpdateUserProfileImage(ctx context.Context, file *mult
 		}
 		user.AvatarUrl = url
 		user.AvatarPublicID = &publicID
-		err = database.DB.WithContext(ctx).Model(&domain.User{}).Save(&user).Error
+		err = database.DB.WithContext(ctx).Where("id = ?", user.ID).Save(&user).Error
 		if err != nil {
 			slog.Error("Failed to update the user profile", "error", err)
 			return errors.New("Internal Server Error")
@@ -115,7 +115,7 @@ func (r *UserRepoHandler) UpdateUserProfileImage(ctx context.Context, file *mult
 		}
 		user.AvatarUrl = url
 		user.AvatarPublicID = &publicID
-		err = database.DB.WithContext(ctx).Model(&domain.User{}).Save(&user).Error
+		err = database.DB.WithContext(ctx).Where("id = ?", user.ID).Save(&user).Error
 		if err != nil {
 			slog.Error("Failed to update the user profile", "error", err)
 			return errors.New("Internal Server Error")
@@ -142,7 +142,7 @@ func (r *UserRepoHandler) UpdateUserDetails(ctx context.Context, name string, pa
 	if password != "" {
 		user.HashPassword = &password
 	}
-	err = database.DB.WithContext(ctx).Model(&domain.User{}).Save(&user).Error
+	err = database.DB.WithContext(ctx).Where("id = ?", user.ID).Save(&user).Error
 	if err != nil {
 		slog.Error("Failed to update the user profile", "error", err)
 		return errors.New("Internal Server Error")

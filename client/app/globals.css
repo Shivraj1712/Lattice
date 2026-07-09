@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -10,34 +10,51 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   
-  --color-brand-black: #181616;      /* Carbon Black */
-  --color-brand-white: #ffffff;      /* White */
-  --color-brand-rose: #cc3189;       /* Hot Rose */
-  --color-brand-pink: #e698c4;       /* Pink Mist */
-  --color-brand-border: #181616;     /* Thick Black Borders */
-  --color-brand-hover: #cc3189;      /* Hot Rose Hover */
+  --color-brand-black: #181616;
+  --color-brand-white: #ffffff;
+  --color-brand-rose: #cc3189;
+  --color-brand-pink: #e698c4;
+  --color-brand-border: #181616;
+  --color-brand-hover: #cc3189;
   
-  --font-sans: 'Outfit', sans-serif;
+  --font-sans: 'Karla', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Karla', sans-serif;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* Custom Webkit scrollbar matching new palette */
+/* Safe-area padding for notched/dynamic-island phones */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Remove blue tap flash on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom Webkit scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: #ffffff;
-  border-left: 2px solid #181616;
+  border-left: 1px solid #181616;
 }
 ::-webkit-scrollbar-thumb {
   background: #181616;
@@ -49,41 +66,25 @@ body {
 
 /* --- Awwwards/Editorial Utility Classes --- */
 
-/* Crisp Editorial Borders */
-.awwwards-border {
-  border: 2px solid #181616;
-}
+.awwwards-border  { border: 2px solid #181616; }
+.awwwards-border-b { border-bottom: 2px solid #181616; }
+.awwwards-border-t { border-top: 2px solid #181616; }
+.awwwards-border-r { border-right: 2px solid #181616; }
+.awwwards-border-l { border-left: 2px solid #181616; }
 
-.awwwards-border-b {
-  border-bottom: 2px solid #181616;
-}
-
-.awwwards-border-t {
-  border-top: 2px solid #181616;
-}
-
-.awwwards-border-r {
-  border-right: 2px solid #181616;
-}
-
-.awwwards-border-l {
-  border-left: 2px solid #181616;
-}
-
-/* Clean Brutalist Shadows and Cards */
+/* Cards */
 .awwwards-card {
   background-color: #ffffff;
   border: 2px solid #181616;
   box-shadow: 4px 4px 0px 0px #181616;
   transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-
 .awwwards-card:hover {
   transform: translate(-2px, -2px);
   box-shadow: 6px 6px 0px 0px #181616;
 }
 
-/* Awwwards Typographic Button (Primary Black Accent) */
+/* Primary Button */
 .awwwards-btn-primary {
   background-color: #181616;
   color: #ffffff;
@@ -93,15 +94,15 @@ body {
   letter-spacing: 0.05em;
   transition: all 0.15s ease-in-out;
   cursor: pointer;
-  border-radius: 0px; /* Sharp corners for brutalist look */
+  border-radius: 0px;
 }
-
 .awwwards-btn-primary:hover {
   background-color: #cc3189;
   border-color: #cc3189;
   color: #ffffff;
 }
 
+/* Secondary Button */
 .awwwards-btn-secondary {
   background-color: #ffffff;
   color: #181616;
@@ -113,14 +114,13 @@ body {
   cursor: pointer;
   border-radius: 0px;
 }
-
 .awwwards-btn-secondary:hover {
   background-color: #e698c4;
   border-color: #181616;
   color: #181616;
 }
 
-/* Brutalist/Modern Form Fields */
+/* Form Fields */
 .awwwards-input {
   background-color: #ffffff;
   border: 2px solid #181616;
@@ -130,25 +130,32 @@ body {
   transition: all 0.15s ease-in-out;
   border-radius: 0px;
 }
-
 .awwwards-input:focus {
   background-color: #ffffff;
   border-color: #cc3189;
   box-shadow: 2px 2px 0px 0px #181616;
 }
 
-/* Toast Slide-in Animations */
-@keyframes slide-in {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+/* Modal scroll containment on small screens — use 100dvh for mobile browsers */
+.modal-scroll {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
 }
 
+/* Toast Slide-in Animation */
+@keyframes slide-in {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
 .animate-slide-in {
   animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Modal Fade-scale Animation */
+@keyframes fade-scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-modal-in {
+  animation: fade-scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

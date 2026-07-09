@@ -67,7 +67,7 @@ func (r *ProjectRepoHandler) UpdateProject(ctx context.Context, details domain.P
 		projectExists.GithubLink = details.GithubLink
 	}
 
-	err = database.DB.WithContext(ctx).Save(&projectExists).Error
+	err = database.DB.WithContext(ctx).Where("id = ?", projectExists.ID).Save(&projectExists).Error
 	if err != nil {
 		slog.Error("Failed to update project in database", "error", err)
 		return fiber.ErrInternalServerError
@@ -94,7 +94,7 @@ func (r *ProjectRepoHandler) UpdateProjectImage(ctx context.Context, file *multi
 	}
 	project.ProjectImageUrl = url
 	project.ProjectImagePublicID = publicID
-	err = database.DB.WithContext(ctx).Model(&domain.Project{}).Save(&project).Error
+	err = database.DB.WithContext(ctx).Where("id = ?", project.ID).Save(&project).Error
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}
@@ -114,7 +114,7 @@ func (r *ProjectRepoHandler) DeleteProject(ctx context.Context, project_ID uuid.
 	if project.UserID != user_ID {
 		return fiber.ErrUnauthorized
 	}
-	err = database.DB.WithContext(ctx).Model(&domain.Project{}).Delete(&project).Error
+	err = database.DB.WithContext(ctx).Delete(&project).Error
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}

@@ -69,9 +69,9 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const displayName = profile?.name || name || "Shivraj";
-  const displayEmail = profile?.email || email || "shivrajmaharaul688@gmail.com";
-  const displayAvatar = profile?.avatar || avatarUrl;
+  const displayName = profile?.name || name || (email ?? "Unknown");
+  const displayEmail = profile?.email || email || "";
+  const displayAvatar = profile?.avatar || avatarUrl || null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-black/70 backdrop-blur-sm">
@@ -82,7 +82,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
           <div className="flex items-center gap-2">
             <User size={14} className="text-brand-black stroke-[2.5]" />
             <span className="text-[10px] font-black uppercase tracking-widest text-brand-black">
-              Public Profile // Read Only
+              Public Profile - Read Only
             </span>
           </div>
           <button
@@ -157,7 +157,7 @@ export const PublicProfileModal: React.FC<PublicProfileModalProps> = ({
               {/* Projects list */}
               <div className="space-y-3">
                 <h3 className="text-xs font-black uppercase tracking-wider text-brand-black border-b-2 border-brand-black pb-2">
-                  Projects by {displayName} // {projects.length}
+                  Projects by {displayName} ({projects.length})
                 </h3>
 
                 {projects.length === 0 ? (

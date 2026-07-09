@@ -64,7 +64,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4 border-b-2 border-brand-black">
           <span className="text-xl font-black uppercase text-brand-black tracking-tight">
-            {tab === "login" ? "Sign In //" : "Join Lattice //"}
+            {tab === "login" ? "Sign In" : "Join Lattice"}
           </span>
           <button
             onClick={onClose}

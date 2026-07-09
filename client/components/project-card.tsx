@@ -1,7 +1,11 @@
 "use client";
 
-import React from "react";
-import { Project } from "../lib/api";
+import React, { useEffect, useState } from "react";
+import { Project, PublicProfile } from "../lib/api";
+import { fetchCachedPublicProfile } from "../lib/profile-cache";
+import { resolveOwnerDetails, USER_ID_TO_EMAIL } from "../lib/profile-details";
+import { useAuth } from "../context/auth-context";
+import { useRouter } from "next/navigation";
 import { ExternalLink, User } from "lucide-react";
 
 const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -25,6 +29,35 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const { user: currentUser } = useAuth();
+  const router = useRouter();
+
+  // Resolve basic owner details first
+  const initialOwner = resolveOwnerDetails(project, currentUser);
+
+  useEffect(() => {
+    let mounted = true;
+    setProfile(null);
+    const email = project.user?.email || USER_ID_TO_EMAIL[project.user_id];
+    if (!email) return;
+    fetchCachedPublicProfile(email).then((p) => {
+      if (!mounted) return;
+      if (p) setProfile(p);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [project.project_id]);
+
+  // Combine initial details with any loaded profile data
+  const resolvedOwner = {
+    userId: initialOwner.userId,
+    name: profile?.name || initialOwner.name,
+    email: profile?.email || initialOwner.email,
+    avatar: profile?.avatar || initialOwner.avatar,
+  };
+
   return (
     <div
       onClick={onClick}
@@ -87,27 +120,45 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) =>
           </p>
         </div>
 
-        <div className="flex items-center justify-between border-t-2 border-brand-black pt-3.5">
-          <div className="flex items-center gap-2">
-            {project.user?.avatar_url ? (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            const targetUserId = resolvedOwner.userId || project.user_id;
+            const targetEmail = resolvedOwner.email;
+            const targetName = resolvedOwner.name;
+            if (targetUserId && targetEmail) {
+              router.push(`/profile/${targetUserId}?email=${encodeURIComponent(targetEmail)}&name=${encodeURIComponent(targetName)}`);
+            }
+          }}
+          className="border-t-2 border-brand-black pt-4 mt-2 flex items-center justify-between gap-3 group/owner transition-all cursor-pointer hover:bg-zinc-50"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            {resolvedOwner.avatar ? (
               <img
-                src={project.user.avatar_url}
-                alt={project.user.name || "Shivraj"}
-                className="w-6 h-6 object-cover border-2 border-brand-black rounded-none"
+                src={resolvedOwner.avatar}
+                alt={resolvedOwner.name}
+                className="w-8 h-8 object-cover border-2 border-brand-black rounded-none flex-shrink-0"
               />
             ) : (
-              <div className="w-6 h-6 bg-brand-pink border-2 border-brand-black rounded-none flex items-center justify-center text-[10px] font-black text-brand-black uppercase">
-                {(project.user?.name || "Shivraj").charAt(0).toUpperCase()}
+              <div className="w-8 h-8 bg-brand-pink border-2 border-brand-black flex items-center justify-center text-xs font-black text-brand-black uppercase flex-shrink-0">
+                {resolvedOwner.name.charAt(0).toUpperCase()}
               </div>
             )}
-            <span className="text-[10px] font-black uppercase tracking-wider text-brand-black truncate max-w-[120px]">
-              {project.user?.name || "Shivraj"}
-            </span>
+            <div className="min-w-0 text-left">
+              <span className="block text-[10px] font-black uppercase tracking-wider text-brand-black truncate max-w-[120px]">
+                {resolvedOwner.name}
+              </span>
+              <span className="block text-[8px] font-semibold text-zinc-500 truncate max-w-[120px]">
+                {resolvedOwner.email}
+              </span>
+            </div>
           </div>
-          
-          <span className="text-[9px] font-black uppercase tracking-widest text-brand-black">
-            View details ↗
-          </span>
+          <button
+            type="button"
+            className="shrink-0 flex items-center px-2.5 py-1.5 border border-brand-black bg-white hover:bg-brand-black hover:text-white text-[8px] font-black uppercase tracking-wider transition-colors cursor-pointer shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
+          >
+            Profile ↗
+          </button>
         </div>
       </div>
     </div>

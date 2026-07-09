@@ -55,6 +55,18 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  const [projectDetailsLoading, setProjectDetailsLoading] = useState(false);
+  const [projectImageLoading, setProjectImageLoading] = useState(false);
+  const [deleteProjectLoading, setDeleteProjectLoading] = useState<string | null>(null);
+
+  // Sub-modal open states
+  const [projectImageModal, setProjectImageModal] = useState<Project | null>(null);
+  const [projectDetailsModal, setProjectDetailsModal] = useState<Project | null>(null);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [profileDetailsModalOpen, setProfileDetailsModalOpen] = useState(false);
 
   // Confirmation Modal State
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -106,6 +118,8 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const projectImageEditRef = useRef<HTMLInputElement>(null);
+  const avatarModalInputRef = useRef<HTMLInputElement>(null);
+  const projectImageModalRef = useRef<HTMLInputElement>(null);
 
   // Sync profile form when user context loads
   useEffect(() => {
@@ -200,15 +214,25 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     resetStatus();
   };
 
-  // Save Project Details Edit
+  // Open Project Details Modal
+  const openProjectDetailsModal = (proj: Project) => {
+    setProjectDetailsModal(proj);
+    setEditTitle(proj.title);
+    setEditDescription(proj.description);
+    setEditCategory(proj.category || CATEGORIES[0]);
+    setEditGithubLink(proj.github_link);
+    setEditLiveDemoLink(proj.live_demo_link);
+  };
+
+  // Save Project Details Edit (via modal)
   const handleSaveProjectDetails = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProject) return;
+    if (!projectDetailsModal) return;
     resetStatus();
-    setActionLoading(true);
+    setProjectDetailsLoading(true);
 
     try {
-      await api.updateProjectDetails(editingProject.project_id, {
+      await api.updateProjectDetails(projectDetailsModal.project_id, {
         title: editTitle,
         description: editDescription,
         category: editCategory,
@@ -216,31 +240,35 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         live_demo_link: editLiveDemoLink,
       });
       toast.success("Project details updated!");
+      setProjectDetailsModal(null);
       setEditingProject(null);
       await fetchMyProjects();
     } catch (err: any) {
       toast.error(err.message || "Failed to update project");
     } finally {
-      setActionLoading(false);
+      setProjectDetailsLoading(false);
     }
   };
 
-  // Save Project Cover Image Edit
-  const handleUploadProjectImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!editingProject || !e.target.files || e.target.files.length === 0) return;
+  // Upload Project Cover Image (via modal)
+  const handleUploadProjectImage = async (e: React.ChangeEvent<HTMLInputElement>, proj?: Project) => {
+    const target = proj || projectImageModal;
+    if (!target || !e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     resetStatus();
-    setActionLoading(true);
+    setProjectImageLoading(true);
 
     try {
-      await api.updateProjectImage(editingProject.project_id, file);
-      toast.success("Project cover image updated successfully!");
-      setEditingProject(null);
+      await api.updateProjectImage(target.project_id, file);
+      toast.success("Project cover image updated!");
+      if (projectImageEditRef.current) projectImageEditRef.current.value = "";
+      if (projectImageModalRef.current) projectImageModalRef.current.value = "";
+      setProjectImageModal(null);
       await fetchMyProjects();
     } catch (err: any) {
       toast.error(err.message || "Failed to update project image");
     } finally {
-      setActionLoading(false);
+      setProjectImageLoading(false);
     }
   };
 
@@ -251,7 +279,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       "Are you sure you want to delete this project? This action is permanent and cannot be undone.",
       async () => {
         resetStatus();
-        setActionLoading(true);
+        setDeleteProjectLoading(projectId);
         try {
           await api.deleteProject(projectId);
           toast.success("Project deleted.");
@@ -259,7 +287,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         } catch (err: any) {
           toast.error(err.message || "Failed to delete project");
         } finally {
-          setActionLoading(false);
+          setDeleteProjectLoading(null);
         }
       }
     );
@@ -269,7 +297,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     resetStatus();
-    setActionLoading(true);
+    setProfileLoading(true);
 
     try {
       const payload: any = { name: profileName };
@@ -286,7 +314,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     } catch (err: any) {
       toast.error(err.message || "Failed to update profile details");
     } finally {
-      setActionLoading(false);
+      setProfileLoading(false);
     }
   };
 
@@ -296,7 +324,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     const file = e.target.files[0];
     setAvatarFile(file);
     resetStatus();
-    setActionLoading(true);
+    setAvatarLoading(true);
 
     try {
       await api.updateUserImage(file);
@@ -306,7 +334,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
     } catch (err: any) {
       toast.error(err.message || "Failed to upload avatar");
     } finally {
-      setActionLoading(false);
+      setAvatarLoading(false);
     }
   };
 
@@ -317,7 +345,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       "WARNING: Deleting your account will remove your profile and ALL your shared projects. This cannot be undone. Do you wish to continue?",
       async () => {
         resetStatus();
-        setActionLoading(true);
+        setDeleteAccountLoading(true);
         try {
           await api.deleteUser();
           onClose();
@@ -327,22 +355,22 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         } catch (err: any) {
           toast.error(err.message || "Failed to delete user account");
         } finally {
-          setActionLoading(false);
+          setDeleteAccountLoading(false);
         }
       }
     );
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/60 transition-all duration-300">
-      <div className="relative w-full max-w-4xl h-[85vh] bg-white border-2 border-brand-black rounded-none shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-brand-black/60 transition-all duration-300">
+      <div className="relative w-full sm:max-w-4xl h-[92dvh] sm:h-[85vh] bg-white border-0 sm:border-2 sm:border-t-2 border-brand-black rounded-t-none sm:rounded-none shadow-[0_-4px_0_0_rgba(24,22,22,1)] sm:shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] flex flex-col md:flex-row overflow-hidden animate-modal-in">
         
-        {/* Sidebar tabs */}
-        <div className="w-64 bg-zinc-50 border-r-2 border-brand-black flex flex-col justify-between p-6">
-          <div className="space-y-6">
+        {/* Sidebar / bottom tabs on mobile */}
+        <div className="flex md:flex-col w-full md:w-64 bg-zinc-50 border-b-2 md:border-b-0 md:border-r-2 border-brand-black md:justify-between p-3 md:p-6 overflow-x-auto flex-shrink-0">
+          <div className="flex md:flex-col gap-1 md:gap-6 min-w-max md:min-w-0">
             <div>
               <h2 className="text-xl font-black uppercase text-brand-black tracking-tight">
-                Dashboard //
+                Dashboard
               </h2>
               <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-black mt-1">
                 Lattice Studio
@@ -411,9 +439,9 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b-2 border-brand-black bg-zinc-50 sticky top-0 z-10">
             <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
-              {activeTab === "projects" && (editingProject ? "Edit Project Details //" : "Project Directory //")}
-              {activeTab === "add" && "Submit Project //"}
-              {activeTab === "profile" && "Lattice Identity Manager //"}
+              {activeTab === "projects" && (editingProject ? "Edit Project Details" : "Project Directory")}
+              {activeTab === "add" && "Submit Project"}
+              {activeTab === "profile" && "Lattice Identity Manager"}
               {actionLoading && <Loader2 size={15} className="animate-spin text-brand-rose" />}
             </h3>
             <button
@@ -466,24 +494,19 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                           />
                           <div className="absolute inset-0 bg-brand-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                             <button
-                              onClick={() => startEditProject(proj)}
+                              onClick={() => openProjectDetailsModal(proj)}
                               className="p-2.5 bg-white border-2 border-brand-black hover:bg-brand-rose hover:text-white rounded-none text-brand-black transition-colors shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] cursor-pointer"
                               title="Edit Details"
                             >
                               <Edit2 size={15} />
                             </button>
-                            <label className="p-2.5 bg-white border-2 border-brand-black hover:bg-brand-rose hover:text-white rounded-none text-brand-black transition-colors shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] cursor-pointer flex items-center justify-center">
+                            <button
+                              onClick={() => setProjectImageModal(proj)}
+                              className="p-2.5 bg-white border-2 border-brand-black hover:bg-brand-rose hover:text-white rounded-none text-brand-black transition-colors shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] cursor-pointer"
+                              title="Update Cover Image"
+                            >
                               <ImageIcon size={15} />
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  setEditingProject(proj);
-                                  handleUploadProjectImage(e);
-                                }}
-                              />
-                            </label>
+                            </button>
                             <button
                               onClick={() => handleDeleteProject(proj.project_id)}
                               className="p-2.5 bg-brand-rose border-2 border-brand-black hover:bg-brand-rose hover:border-brand-rose hover:text-white text-white rounded-none transition-colors shadow-[2px_2px_0px_0px_rgba(24,22,22,1)] cursor-pointer"
@@ -524,36 +547,71 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
               </div>
             )}
 
-            {/* TAB 1 EDIT SUB-FORM: EDIT PROJECT DETAILS */}
+            {/* TAB 1 EDIT SUB-FORM: EDIT PROJECT */}
             {activeTab === "projects" && editingProject && (
-              <form onSubmit={handleSaveProjectDetails} className="space-y-4 max-w-lg">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                    Project Title
-                  </label>
+              <div className="space-y-6 max-w-lg">
+
+                {/* --- Cover Image (independent section) --- */}
+                <div className="bg-white border-2 border-brand-black rounded-none p-5 space-y-3">
+                  <h4 className="text-[10px] font-black uppercase tracking-wider text-brand-black border-b-2 border-zinc-100 pb-2">
+                    Cover Image
+                  </h4>
+                  {editingProject.image_url && (
+                    <img
+                      src={editingProject.image_url}
+                      alt="Current cover"
+                      className="w-full h-28 object-cover border border-zinc-200"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    disabled={projectImageLoading || projectDetailsLoading}
+                    onClick={() => projectImageEditRef.current?.click()}
+                    className="w-full py-2.5 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-pink/50 hover:bg-zinc-100 rounded-none text-xs font-bold text-brand-black flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {projectImageLoading ? (
+                      <><Loader2 size={13} className="animate-spin" /><span>Uploading Image...</span></>
+                    ) : (
+                      <><ImageIcon size={13} /><span>Change Cover Image</span></>
+                    )}
+                  </button>
                   <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
-                    required
+                    type="file"
+                    ref={projectImageEditRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleUploadProjectImage}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold resize-none"
-                    required
-                  />
-                </div>
+                {/* --- Project Details Form (independent) --- */}
+                <form onSubmit={handleSaveProjectDetails} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
+                      Project Title
+                    </label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
+                      required
+                    />
+                  </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold resize-none"
+                      required
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
                       Category
@@ -570,74 +628,54 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                      Cover Image
-                    </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
+                        GitHub URL
+                      </label>
+                      <input
+                        type="url"
+                        value={editGithubLink}
+                        onChange={(e) => setEditGithubLink(e.target.value)}
+                        className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
+                        placeholder="https://github.com/username/project"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
+                        Live Demo URL
+                      </label>
+                      <input
+                        type="url"
+                        value={editLiveDemoLink}
+                        onChange={(e) => setEditLiveDemoLink(e.target.value)}
+                        className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
+                        placeholder="https://myproject.vercel.app"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="submit"
+                      disabled={projectDetailsLoading || projectImageLoading}
+                      className="awwwards-btn-primary flex items-center justify-center gap-2 flex-1 py-3.5 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {projectDetailsLoading ? <Loader2 size={14} className="animate-spin" /> : "Save Details"}
+                    </button>
                     <button
                       type="button"
-                      onClick={() => projectImageEditRef.current?.click()}
-                      className="w-full py-3 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-pink/50 hover:bg-zinc-100 rounded-none text-xs font-bold text-brand-black flex items-center justify-center gap-2 cursor-pointer transition-all"
+                      onClick={() => setEditingProject(null)}
+                      className="awwwards-btn-secondary flex-1 py-3.5 rounded-none font-bold text-xs uppercase"
                     >
-                      <ImageIcon size={14} />
-                      Update Cover Image
+                      Cancel
                     </button>
-                    <input
-                      type="file"
-                      ref={projectImageEditRef}
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleUploadProjectImage}
-                    />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                      GitHub URL
-                    </label>
-                    <input
-                      type="url"
-                      value={editGithubLink}
-                      onChange={(e) => setEditGithubLink(e.target.value)}
-                      className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
-                      placeholder="https://github.com/username/project"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                      Live Demo URL
-                    </label>
-                    <input
-                      type="url"
-                      value={editLiveDemoLink}
-                      onChange={(e) => setEditLiveDemoLink(e.target.value)}
-                      className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
-                      placeholder="https://myproject.vercel.app"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={actionLoading}
-                    className="awwwards-btn-primary flex items-center justify-center gap-2 flex-1 py-3.5 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {actionLoading ? <Loader2 size={14} className="animate-spin" /> : "Save Changes"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingProject(null)}
-                    className="awwwards-btn-secondary flex-1 py-3.5 rounded-none font-bold text-xs uppercase"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+                </form>
+              </div>
             )}
 
             {/* TAB 2: ADD NEW PROJECT */}
@@ -765,14 +803,14 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
             {activeTab === "profile" && (
               <div className="space-y-8 max-w-lg">
                 
-                {/* Profile Details (Name, Password, Avatar) */}
-                <div className="bg-white border-2 border-brand-black rounded-none p-6 space-y-6">
+                {/* Profile Details Card */}
+                <div className="bg-white border-2 border-brand-black rounded-none p-6 space-y-4">
                   <h4 className="text-xs font-black uppercase tracking-wider text-brand-black border-b-2 border-zinc-100 pb-3">
                     Profile Details
                   </h4>
 
-                  {/* Avatar upload */}
-                  <div className="flex items-center gap-4.5">
+                  {/* Avatar row */}
+                  <div className="flex items-center gap-4">
                     {user?.avatar_url ? (
                       <img
                         src={user.avatar_url}
@@ -784,66 +822,30 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                         {user?.name.charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => avatarInputRef.current?.click()}
-                        className="awwwards-btn-secondary px-4 py-2 rounded-none text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
-                      >
-                        Upload Avatar
-                      </button>
-                      <p className="text-[9px] text-zinc-400 font-bold tracking-wider mt-1.5">
-                        Supports PNG, JPG, or GIF up to 5MB.
-                      </p>
-                      <input
-                        type="file"
-                        ref={avatarInputRef}
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleUploadAvatar}
-                      />
+                    <div className="space-y-1">
+                      <p className="text-sm font-black uppercase text-brand-black">{user?.name}</p>
+                      <p className="text-[10px] text-zinc-400 font-semibold">{user?.email}</p>
                     </div>
                   </div>
 
-                  <form onSubmit={handleUpdateProfile} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                        Username
-                      </label>
-                      <div className="relative">
-                        <UserIcon className="absolute left-3.5 top-3.5 text-brand-black" size={16} />
-                        <input
-                          type="text"
-                          value={profileName}
-                          onChange={(e) => setProfileName(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 awwwards-input rounded-none text-sm font-semibold"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">
-                        New Password (optional)
-                      </label>
-                      <input
-                        type="password"
-                        placeholder="Leave blank to keep current"
-                        value={profilePassword}
-                        onChange={(e) => setProfilePassword(e.target.value)}
-                        className="w-full px-4 py-3 awwwards-input rounded-none text-sm font-semibold"
-                      />
-                    </div>
-
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
-                      type="submit"
-                      disabled={actionLoading}
-                      className="awwwards-btn-primary flex items-center gap-2 px-5 py-2.5 rounded-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                      type="button"
+                      onClick={() => setAvatarModalOpen(true)}
+                      className="awwwards-btn-secondary flex items-center justify-center gap-2 px-5 py-2.5 rounded-none text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(24,22,22,1)]"
                     >
-                      {actionLoading && <Loader2 size={12} className="animate-spin" />}
-                      <span>Save Account Details</span>
+                      <ImageIcon size={13} />
+                      <span>Update Avatar</span>
                     </button>
-                  </form>
+                    <button
+                      type="button"
+                      onClick={() => setProfileDetailsModalOpen(true)}
+                      className="awwwards-btn-primary flex items-center justify-center gap-2 px-5 py-2.5 rounded-none text-xs font-black uppercase"
+                    >
+                      <Edit2 size={13} />
+                      <span>Edit Profile Details</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Danger Zone */}
@@ -858,10 +860,10 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
                   <button
                     type="button"
                     onClick={handleDeleteAccount}
-                    disabled={actionLoading}
+                    disabled={deleteAccountLoading || profileLoading || avatarLoading}
                     className="awwwards-btn-primary flex items-center gap-2 py-2.5 px-5 bg-brand-rose border-brand-rose hover:bg-brand-rose/90 rounded-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {actionLoading && <Loader2 size={12} className="animate-spin" />}
+                    {deleteAccountLoading && <Loader2 size={12} className="animate-spin" />}
                     <span>Delete My Account</span>
                   </button>
                 </div>
@@ -873,6 +875,192 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
         </div>
 
       </div>
+
+      {/* ── MODAL: Update Project Image ── */}
+      {projectImageModal && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-white border-4 border-brand-black w-full max-w-sm shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none space-y-5 p-6 animate-slide-in">
+            <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3">
+              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <ImageIcon size={15} /> Update Cover Image
+              </h3>
+              <button onClick={() => setProjectImageModal(null)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-[11px] text-zinc-500 font-semibold">
+              Updating the cover image for: <span className="text-brand-black font-black">{projectImageModal.title}</span>
+            </p>
+            {projectImageModal.image_url && (
+              <img src={projectImageModal.image_url} alt="Current" className="w-full h-32 object-cover border-2 border-zinc-200 rounded-none" />
+            )}
+            <button
+              type="button"
+              disabled={projectImageLoading}
+              onClick={() => projectImageModalRef.current?.click()}
+              className="w-full py-3 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-rose hover:bg-zinc-100 rounded-none text-xs font-bold text-brand-black flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {projectImageLoading ? (
+                <><Loader2 size={14} className="animate-spin" /><span>Uploading...</span></>
+              ) : (
+                <><ImageIcon size={14} /><span>Choose New Image</span></>
+              )}
+            </button>
+            <input
+              type="file"
+              ref={projectImageModalRef}
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleUploadProjectImage(e, projectImageModal)}
+            />
+            <button
+              type="button"
+              onClick={() => setProjectImageModal(null)}
+              className="w-full awwwards-btn-secondary py-2.5 rounded-none font-bold text-xs uppercase cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Update Project Details ── */}
+      {projectDetailsModal && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-white border-4 border-brand-black w-full max-w-md shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none p-6 animate-slide-in">
+            <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3 mb-5">
+              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <Edit2 size={15} /> Edit Project Details
+              </h3>
+              <button onClick={() => setProjectDetailsModal(null)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveProjectDetails} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">Title</label>
+                <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-4 py-2.5 awwwards-input rounded-none text-sm font-semibold" required />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">Description</label>
+                <textarea rows={3} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="w-full px-4 py-2.5 awwwards-input rounded-none text-sm font-semibold resize-none" required />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">Category</label>
+                <select value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="w-full px-4 py-2.5 awwwards-input rounded-none text-sm font-semibold cursor-pointer">
+                  {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">GitHub URL</label>
+                  <input type="url" value={editGithubLink} onChange={(e) => setEditGithubLink(e.target.value)} className="w-full px-3 py-2.5 awwwards-input rounded-none text-xs font-semibold" placeholder="https://github.com/..." required />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">Live Demo URL</label>
+                  <input type="url" value={editLiveDemoLink} onChange={(e) => setEditLiveDemoLink(e.target.value)} className="w-full px-3 py-2.5 awwwards-input rounded-none text-xs font-semibold" placeholder="https://..." required />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={projectDetailsLoading} className="awwwards-btn-primary flex items-center justify-center gap-2 flex-1 py-3 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                  {projectDetailsLoading ? <Loader2 size={13} className="animate-spin" /> : "Save Details"}
+                </button>
+                <button type="button" onClick={() => setProjectDetailsModal(null)} className="awwwards-btn-secondary flex-1 py-3 rounded-none font-bold text-xs uppercase cursor-pointer">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Update Avatar ── */}
+      {avatarModalOpen && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-white border-4 border-brand-black w-full max-w-sm shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none space-y-5 p-6 animate-slide-in">
+            <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3">
+              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <ImageIcon size={15} /> Update Avatar
+              </h3>
+              <button onClick={() => setAvatarModalOpen(false)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex justify-center">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt={user.name} className="w-24 h-24 object-cover border-4 border-brand-black" />
+              ) : (
+                <div className="w-24 h-24 bg-brand-pink border-4 border-brand-black flex items-center justify-center text-brand-black text-3xl font-black">
+                  {user?.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={avatarLoading}
+              onClick={() => avatarModalInputRef.current?.click()}
+              className="w-full py-3 bg-zinc-50 border-2 border-dashed border-zinc-300 hover:border-brand-rose hover:bg-zinc-100 rounded-none text-xs font-bold text-brand-black flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {avatarLoading ? (
+                <><Loader2 size={14} className="animate-spin" /><span>Uploading...</span></>
+              ) : (
+                <><ImageIcon size={14} /><span>Choose New Avatar</span></>
+              )}
+            </button>
+            <p className="text-[9px] text-zinc-400 font-bold text-center tracking-wider">Supports PNG, JPG, or GIF up to 5MB.</p>
+            <input
+              type="file"
+              ref={avatarModalInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                await handleUploadAvatar(e);
+                setAvatarModalOpen(false);
+              }}
+            />
+            <button type="button" onClick={() => setAvatarModalOpen(false)} className="w-full awwwards-btn-secondary py-2.5 rounded-none font-bold text-xs uppercase cursor-pointer">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Edit Profile Details ── */}
+      {profileDetailsModalOpen && (
+        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-white border-4 border-brand-black w-full max-w-sm shadow-[8px_8px_0px_0px_rgba(24,22,22,1)] rounded-none p-6 animate-slide-in">
+            <div className="flex items-center justify-between border-b-2 border-zinc-100 pb-3 mb-5">
+              <h3 className="text-sm font-black uppercase tracking-wider text-brand-black flex items-center gap-2">
+                <UserIcon size={15} /> Edit Profile Details
+              </h3>
+              <button onClick={() => setProfileDetailsModalOpen(false)} className="text-zinc-400 hover:text-brand-rose transition-colors cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={async (e) => { await handleUpdateProfile(e); setProfileDetailsModalOpen(false); }} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">Username</label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3.5 top-3 text-brand-black" size={15} />
+                  <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full pl-10 pr-4 py-2.5 awwwards-input rounded-none text-sm font-semibold" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-1.5">New Password (optional)</label>
+                <input type="password" placeholder="Leave blank to keep current" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-4 py-2.5 awwwards-input rounded-none text-sm font-semibold" />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={profileLoading} className="awwwards-btn-primary flex items-center justify-center gap-2 flex-1 py-3 rounded-none font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                  {profileLoading ? <Loader2 size={13} className="animate-spin" /> : "Save Changes"}
+                </button>
+                <button type="button" onClick={() => setProfileDetailsModalOpen(false)} className="awwwards-btn-secondary flex-1 py-3 rounded-none font-bold text-xs uppercase cursor-pointer">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Custom Confirmation Modal */}
       {confirmConfig.isOpen && (

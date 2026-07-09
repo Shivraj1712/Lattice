@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { api, Project, PublicProfile } from "../lib/api";
+import { resolveOwnerDetails, USER_ID_TO_EMAIL } from "../lib/profile-details";
+import { useAuth } from "../context/auth-context";
+import { useRouter } from "next/navigation";
 import { X, ExternalLink, Calendar, ChevronRight } from "lucide-react";
 
 const GithubIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -31,13 +34,21 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   onViewProfile,
 }) => {
   const [ownerProfile, setOwnerProfile] = useState<PublicProfile | null>(null);
+  const { user: currentUser } = useAuth();
+  const router = useRouter();
+
+  // Resolve basic owner details
+  const initialOwner = resolveOwnerDetails(project || {} as any, currentUser);
 
   // Whenever the project changes, fetch the owner's public profile to get the real avatar
   useEffect(() => {
     setOwnerProfile(null);
     if (!project) return;
 
-    const email = project.user?.email || "shivrajmaharaul688@gmail.com";
+    // Resolve email from user object or USER_ID_TO_EMAIL mapping
+    const email = project.user?.email || USER_ID_TO_EMAIL[project.user_id];
+    if (!email) return;
+
     api
       .getPublicProfile(email)
       .then((res) => {
@@ -56,13 +67,19 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     day: "numeric",
   });
 
-  // Resolved owner info: prefer freshly-fetched profile, then project.user fields, then hardcoded fallback
-  const ownerName = ownerProfile?.name || project.user?.name || "Shivraj";
-  const ownerEmail = ownerProfile?.email || project.user?.email || "shivrajmaharaul688@gmail.com";
-  const ownerAvatar = ownerProfile?.avatar || project.user?.avatar_url || null;
+  // Resolved owner info: prefer freshly-fetched profile, then resolved initial details
+  const ownerName = ownerProfile?.name || initialOwner.name || "Unknown";
+  const ownerEmail = ownerProfile?.email || initialOwner.email || "";
+  const ownerAvatar = ownerProfile?.avatar || initialOwner.avatar || null;
 
   const handleViewProfile = () => {
-    onViewProfile?.(ownerEmail, ownerName, ownerAvatar);
+    const targetUserId = initialOwner.userId || project.user_id;
+    if (targetUserId && ownerEmail) {
+      router.push(`/profile/${targetUserId}?email=${encodeURIComponent(ownerEmail)}&name=${encodeURIComponent(ownerName)}`);
+      onClose();
+    } else {
+      onViewProfile?.(ownerEmail, ownerName, ownerAvatar);
+    }
   };
 
   return (
@@ -72,7 +89,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b-2 border-brand-black sticky top-0 bg-white z-10">
           <span className="px-3 py-1 bg-brand-black text-white text-xs font-black uppercase tracking-wider border-2 border-brand-black rounded-none">
-            {project.category} // Project Details
+            {project.category} - Project Details
           </span>
           <button
             onClick={onClose}
@@ -160,7 +177,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
           {/* Description Block */}
           <div className="space-y-3">
-            <h3 className="text-xs font-black uppercase tracking-wider text-brand-black">Project Description //</h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-brand-black">Project Description</h3>
             <p className="text-brand-black leading-relaxed text-sm font-semibold whitespace-pre-wrap">
               {project.description}
             </p>
