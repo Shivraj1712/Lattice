@@ -122,15 +122,6 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-white text-brand-black flex flex-col items-center justify-center gap-4 select-none">
-        <div className="w-10 h-10 border-4 border-brand-black border-t-brand-rose animate-spin rounded-none shadow-[3px_3px_0px_0px_rgba(24,22,22,1)]" />
-        <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Syncing Lattice Session...</p>
-      </div>
-    );
-  }
-
   // Memoized filtered projects
   const filteredProjects = useMemo(() => {
     return projects.filter((proj) => {
@@ -145,6 +136,16 @@ export default function Home() {
 
   const onSearch = useCallback((val: string) => setSearchInput(val), []);
   const onSelectCategory = useCallback((cat: string) => setSelectedCategory(cat), []);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-white text-brand-black flex flex-col items-center justify-center gap-4 select-none">
+        <div className="w-10 h-10 border-4 border-brand-black border-t-brand-rose animate-spin rounded-none shadow-[3px_3px_0px_0px_rgba(24,22,22,1)]" />
+        <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Syncing Lattice Session...</p>
+      </div>
+    );
+  }
+
 
   const openAuthModal = (tab: "login" | "signup") => {
     setAuthTab(tab);
