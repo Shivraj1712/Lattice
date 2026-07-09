@@ -111,11 +111,11 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => handleCategorySelect("All")}
             >
               <Image
-                src="/LatticeLOGO.png"
+                src="/icon.png"
                 alt="Lattice Logo"
-                width={20}
-                height={40}
-                className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain transition-transform duration-200 group-hover:scale-105"
                 priority
               />
               <span className="text-xl font-black uppercase text-brand-black tracking-tighter hover:text-brand-rose transition-colors">
