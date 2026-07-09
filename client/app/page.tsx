@@ -14,7 +14,7 @@ import { PublicProfileModal } from "../components/public-profile-modal";
 import { Loader2, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function Home() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   
   // Projects State
@@ -143,15 +143,6 @@ export default function Home() {
     }
   }, []);
   const onSelectCategory = useCallback((cat: string) => setSelectedCategory(cat), []);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-white text-brand-black flex flex-col items-center justify-center gap-4 select-none">
-        <div className="w-10 h-10 border-4 border-brand-black border-t-brand-rose animate-spin rounded-none shadow-[3px_3px_0px_0px_rgba(24,22,22,1)]" />
-        <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Syncing Lattice Session...</p>
-      </div>
-    );
-  }
 
 
   const openAuthModal = (tab: "login" | "signup") => {

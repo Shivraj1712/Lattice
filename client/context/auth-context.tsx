@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { api, User, LoginRequest, SignUpRequest, UpdateDetailsRequest } from "../lib/api";
+import { Loader2 } from "lucide-react";
 
 interface AuthContextType {
   user: User | null;
@@ -17,6 +18,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Syncing Lattice Session...");
 
   const refreshUser = async () => {
     try {
@@ -30,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
     } finally {
       setLoading(false);
+      setIsInitialized(true);
     }
   };
 
@@ -38,23 +42,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (data: LoginRequest) => {
-    await api.login(data);
-    await refreshUser();
+    setLoadingMessage("Logging you in...");
+    setLoading(true);
+    try {
+      await api.login(data);
+      await refreshUser();
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
   };
 
   const signUp = async (data: SignUpRequest) => {
-    await api.signUp(data);
-    await refreshUser();
+    setLoadingMessage("Creating your account...");
+    setLoading(true);
+    try {
+      await api.signUp(data);
+      await refreshUser();
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
   };
 
   const logout = async () => {
-    await api.logout();
-    setUser(null);
+    setLoadingMessage("Signing you out...");
+    setLoading(true);
+    try {
+      await api.logout();
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, signUp, logout, refreshUser }}>
-      {children}
+      {!isInitialized ? (
+        <div className="min-h-screen bg-white text-brand-black flex flex-col items-center justify-center gap-4 select-none">
+          <div className="w-10 h-10 border-4 border-brand-black border-t-brand-rose animate-spin rounded-none shadow-[3px_3px_0px_0px_rgba(24,22,22,1)]" />
+          <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Syncing Lattice Session...</p>
+        </div>
+      ) : (
+        <>
+          {children}
+          {loading && (
+            <div className="fixed inset-0 z-[9999] bg-white/85 backdrop-blur-sm text-brand-black flex flex-col items-center justify-center gap-4 select-none animate-fade-in">
+              <div className="w-10 h-10 border-4 border-brand-black border-t-brand-rose animate-spin rounded-none shadow-[3px_3px_0px_0px_rgba(24,22,22,1)]" />
+              <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">{loadingMessage}</p>
+            </div>
+          )}
+        </>
+      )}
     </AuthContext.Provider>
   );
 };
