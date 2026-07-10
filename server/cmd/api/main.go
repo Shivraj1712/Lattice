@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"strings"
 
 	_ "github.com/Shivraj1712/Lattice.git/docs"
 	"github.com/Shivraj1712/Lattice.git/internal/cache"
@@ -34,8 +35,16 @@ func main() {
 		ErrorHandler: middleware.ErrorHandler,
 	})
 	app.Get("/swagger/*", swagger.HandlerDefault)
+	allowedOrigins := []string{}
+	for _, origin := range strings.Split(config.Configuration.FrontendUrl, ",") {
+		trimmedOrigin := strings.TrimSpace(origin)
+		if trimmedOrigin != "" {
+			allowedOrigins = append(allowedOrigins, trimmedOrigin)
+		}
+	}
+	allowedOrigins = append(allowedOrigins, "http://localhost:3000", "http://127.0.0.1:3000")
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     config.Configuration.FrontendUrl,
+		AllowOrigins:     strings.Join(allowedOrigins, ","),
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowCredentials: true,
 	}))

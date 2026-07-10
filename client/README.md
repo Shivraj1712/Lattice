@@ -44,7 +44,7 @@ Create a `.env.local` file in this directory (or set in the Vercel dashboard):
 NEXT_PUBLIC_API_URL=https://lattice.onrender.com
 ```
 
-This variable **must** be prefixed with `NEXT_PUBLIC_` so Next.js exposes it to the browser bundle. Without it the app falls back to `http://localhost:8080` which will not work in production.
+This variable **must** be prefixed with `NEXT_PUBLIC_` so Next.js can use it when proxying `/api/*` requests to the backend. Without it the app falls back to `http://localhost:8080` for local development.
 
 ## Running locally
 
@@ -62,7 +62,7 @@ bun dev
 
 App runs at `http://localhost:3000`.
 
-> Make sure the backend server is also running (see `server/readme.md`) or point `NEXT_PUBLIC_API_URL` at the deployed backend.
+> Make sure the backend server is also running (see `server/readme.md`) or point `NEXT_PUBLIC_API_URL` at the backend you want Next.js to proxy to.
 
 ## Building for production
 

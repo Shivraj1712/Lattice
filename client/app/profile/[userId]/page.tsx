@@ -12,6 +12,7 @@ import { useAuth } from "../../../context/auth-context";
 import { useToast } from "../../../context/toast-context";
 import { Loader2, User, ChevronLeft, ArrowRight, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getErrorMessage } from "../../../lib/api";
 
 interface ProfilePageProps {
   params: Promise<{ userId: string }>;
@@ -100,7 +101,7 @@ export default function ProfilePage({ params, searchParams }: ProfilePageProps) 
       }
     } catch (err: any) {
       console.error(err);
-      setError("Failed to load user profile or projects.");
+      setError(getErrorMessage(err, "Failed to load user profile or projects."));
     } finally {
       setLoading(false);
     }

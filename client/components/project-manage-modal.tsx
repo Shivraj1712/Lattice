@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/auth-context";
 import { useToast } from "../context/toast-context";
-import { api, Project } from "../lib/api";
+import { api, Project, getErrorMessage } from "../lib/api";
 import {
   X,
   User as UserIcon,
@@ -241,7 +241,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       if (onProjectsChanged) onProjectsChanged();
       setActiveTab("projects");
     } catch (err: any) {
-      toast.error(err.message || "Failed to create project");
+      toast.error(getErrorMessage(err, "Failed to create project"));
     } finally {
       setActionLoading(false);
     }
@@ -322,7 +322,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       await fetchMyProjects();
       if (onProjectsChanged) onProjectsChanged();
     } catch (err: any) {
-      toast.error(err.message || "Failed to update project");
+      toast.error(getErrorMessage(err, "Failed to update project"));
     } finally {
       setProjectDetailsLoading(false);
     }
@@ -345,7 +345,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       await fetchMyProjects();
       if (onProjectsChanged) onProjectsChanged();
     } catch (err: any) {
-      toast.error(err.message || "Failed to update project image");
+      toast.error(getErrorMessage(err, "Failed to update project image"));
     } finally {
       setProjectImageLoading(false);
     }
@@ -365,7 +365,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
           await fetchMyProjects();
           if (onProjectsChanged) onProjectsChanged();
         } catch (err: any) {
-          toast.error(err.message || "Failed to delete project");
+          toast.error(getErrorMessage(err, "Failed to delete project"));
         } finally {
           setDeleteProjectLoading(null);
         }
@@ -402,7 +402,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       setProfilePassword("");
       await refreshUser();
     } catch (err: any) {
-      toast.error(err.message || "Failed to update profile details");
+      toast.error(getErrorMessage(err, "Failed to update profile details"));
     } finally {
       setProfileLoading(false);
     }
@@ -422,7 +422,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
       setAvatarFile(null);
       await refreshUser();
     } catch (err: any) {
-      toast.error(err.message || "Failed to upload avatar");
+      toast.error(getErrorMessage(err, "Failed to upload avatar"));
     } finally {
       setAvatarLoading(false);
     }
@@ -443,7 +443,7 @@ export const ProjectManageModal: React.FC<ProjectManageModalProps> = ({
           toast.success("Account deleted successfully.");
           window.location.reload();
         } catch (err: any) {
-          toast.error(err.message || "Failed to delete user account");
+          toast.error(getErrorMessage(err, "Failed to delete user account"));
         } finally {
           setDeleteAccountLoading(false);
         }

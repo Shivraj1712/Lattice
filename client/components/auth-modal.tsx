@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useAuth } from "../context/auth-context";
 import { useToast } from "../context/toast-context";
 import { X, Lock, Mail, User as UserIcon, Loader2, ArrowRight } from "lucide-react";
-import { api } from "../lib/api";
+import { api, getErrorMessage } from "../lib/api";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -47,7 +47,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
       onClose();
     } catch (err: any) {
-      setError(err.message || "Authentication failed. Please try again.");
+      const message = getErrorMessage(err, "Authentication failed. Please try again.");
+      setError(message);
     } finally {
       setLoading(false);
     }

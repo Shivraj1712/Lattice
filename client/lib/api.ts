@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const BASE_URL = "";
 
 export interface User {
   user_id: string;
@@ -81,6 +81,23 @@ export class APIError extends Error {
     this.status = status;
     this.name = "APIError";
   }
+}
+
+export function getErrorMessage(error: unknown, fallback = "Request failed"): string {
+  if (error instanceof APIError) {
+    return error.message || fallback;
+  }
+
+  if (axios.isAxiosError(error)) {
+    const responseMessage = (error.response?.data as any)?.message;
+    return responseMessage || error.message || fallback;
+  }
+
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+
+  return fallback;
 }
 
 // --- Axios Configuration ---
@@ -168,7 +185,7 @@ export const api = {
   },
 
   getGoogleAuthUrl(): string {
-    return `${BASE_URL}/api/v1/auth/google`;
+    return `/api/v1/auth/google`;
   },
 
   // ==========================================

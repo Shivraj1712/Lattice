@@ -11,6 +11,7 @@ import { ProjectDetailModal } from "../components/project-detail-modal";
 import { ProjectManageModal } from "../components/project-manage-modal";
 import { AuthModal } from "../components/auth-modal";
 import { PublicProfileModal } from "../components/public-profile-modal";
+import { getErrorMessage } from "../lib/api";
 import { Loader2, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function Home() {
@@ -85,7 +86,7 @@ export default function Home() {
       }
     } catch (err: any) {
       console.error(err);
-      setError("Unable to load projects. Ensure the backend server is running.");
+      setError(getErrorMessage(err, "Unable to load projects. Ensure the backend server is running."));
     } finally {
       setLoading(false);
     }
