@@ -11,6 +11,7 @@ import (
 	"github.com/Shivraj1712/Lattice.git/internal/handler"
 	"github.com/Shivraj1712/Lattice.git/internal/middleware"
 	"github.com/Shivraj1712/Lattice.git/internal/router"
+	"github.com/Shivraj1712/Lattice.git/pkg/logger"
 	"github.com/Shivraj1712/Lattice.git/pkg/media"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -23,6 +24,7 @@ import (
 // @host			lattice-xd9g.onrender.com
 // @BasePath		/
 func main() {
+	logger.LoggerInit()
 	config.FetchConfig()
 	database.ConnectDB()
 	database.MigrateModels()
